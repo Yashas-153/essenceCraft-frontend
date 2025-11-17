@@ -45,10 +45,20 @@ const ProductsGrid = ({ products, loading }) => {
   return (
     <>
       {/* Results count */}
-      <div className="mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <p className="text-stone-600">
           Showing <span className="font-semibold text-stone-900">{products.length}</span> products
         </p>
+        <div className="flex items-center space-x-4 text-sm">
+          <span className="text-emerald-600 font-medium">
+            {products.filter(p => p.stock > 0).length} In Stock
+          </span>
+          {products.filter(p => p.stock === 0).length > 0 && (
+            <span className="text-red-600 font-medium">
+              {products.filter(p => p.stock === 0).length} Out of Stock
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Products grid */}

@@ -3,6 +3,8 @@ import { Button } from '../ui/button';
 import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
+const STATIC_API_URL = 'http://localhost:8000';
+
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
 
@@ -12,6 +14,9 @@ const ProductCard = ({ product }) => {
 
   const handleAddToCart = (e) => {
     e.stopPropagation();
+    if (product.stock === 0) {
+      return; // Don't allow adding to cart if out of stock
+    }
     // TODO: Implement add to cart functionality
     console.log('Add to cart:', product.id);
   };
@@ -54,7 +59,7 @@ const ProductCard = ({ product }) => {
         {/* Product image */}
         {product.image_url ? (
           <img
-            src={product.image_url}
+            src={`${STATIC_API_URL}${product.image_url}`}
             alt={product.name}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             onError={(e) => {
@@ -107,21 +112,34 @@ const ProductCard = ({ product }) => {
         <div className="flex items-center justify-between pt-4 border-t border-stone-100">
           <div>
             <span className="text-2xl font-semibold text-stone-900">
-              ${product.price.toFixed(2)}
+              {product.currency_symbol || '$'}{product.price.toFixed(2)}
             </span>
             <span className="text-sm text-stone-500 ml-1">/ 15ml</span>
+            {/* Stock indicator */}
+            {product.stock === 0 && (
+              <div className="flex items-center mt-1">
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                  ⚠️ Out of Stock
+                </span>
+              </div>
+            )}
           </div>
           <Button
             onClick={handleAddToCart}
             disabled={product.stock === 0}
             className={`${
               product.stock === 0 
-                ? 'bg-stone-300 cursor-not-allowed' 
+                ? 'bg-stone-300 text-stone-500 cursor-not-allowed hover:bg-stone-300' 
                 : 'bg-emerald-700 hover:bg-emerald-800'
             } text-white rounded-sm`}
             size="sm"
+            title={product.stock === 0 ? 'Out of stock' : 'Add to cart'}
           >
-            <ShoppingCart className="w-4 h-4" />
+            {product.stock === 0 ? (
+              <span className="text-xs">Out of Stock</span>
+            ) : (
+              <ShoppingCart className="w-4 h-4" />
+            )}
           </Button>
         </div>
       </div>

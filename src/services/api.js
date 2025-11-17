@@ -156,83 +156,439 @@ export const cartAPI = {
   },
 };
 
-// Authentication API endpoints
+// Authentication API endpoints - using API_BASE_URL + /auth/*
 export const authAPI = {
+  /**
+   * Register new user
+   * @param {string} email - User email
+   * @param {string} firstName - User first name
+   * @param {string} lastName - User last name
+   * @param {string} password - User password
+   */
+  register: async (email, firstName, lastName, password) => {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email,
+        first_name: firstName,
+        last_name: lastName,
+        password,
+      }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Registration failed');
+    }
+
+    return response.json();
+  },
+
   /**
    * Login with email and password
    * @param {string} email - User email
    * @param {string} password - User password
    */
   login: async (email, password) => {
-    return fetchAPI('/auth/login', {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
     });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Login failed');
+    }
+
+    return response.json();
   },
 
   /**
-   * Register new user (if you have signup endpoint)
-   * @param {Object} userData - User registration data
+   * Verify email with token
+   * @param {string} token - Email verification token
    */
-  register: async (userData) => {
-    return fetchAPI('/auth/register', {
+  verifyEmail: async (token) => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
       method: 'POST',
-      body: JSON.stringify(userData),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token }),
     });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Email verification failed');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Add phone number and request OTP
+   * @param {string} phone - Phone number
+   * @param {string} accessToken - Access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  addPhone: async (phone, accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/auth/add-phone`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+      body: JSON.stringify({ phone }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to send OTP');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Verify phone with OTP
+   * @param {string} phone - Phone number
+   * @param {string} otp - OTP code
+   * @param {string} accessToken - Access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  verifyPhone: async (phone, otp, accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-phone`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+      body: JSON.stringify({ phone, otp }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Phone verification failed');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Refresh access token
+   * @param {string} refreshToken - Refresh token
+   */
+  refreshToken: async (refreshToken) => {
+    const response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Token refresh failed');
+    }
+
+    return response.json();
   },
 
   /**
    * Get current user profile
+   * @param {string} accessToken - Access token
+   * @param {string} tokenType - Token type (default: 'bearer')
    */
-  getCurrentUser: async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-
-    return fetchAPI('/auth/me', {
+  getCurrentUser: async (accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/auth/me`, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
+        'Authorization': `${tokenType} ${accessToken}`,
         'Content-Type': 'application/json',
       },
     });
-  },
 
-  /**
-   * Refresh authentication token
-   * @param {string} refreshToken - Refresh token
-   */
-  refreshToken: async (refreshToken) => {
-    return fetchAPI('/auth/refresh', {
-      method: 'POST',
-      body: JSON.stringify({ refresh_token: refreshToken }),
-    });
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to fetch user');
+    }
+
+    return response.json();
   },
 
   /**
    * Logout user
+   * @param {string} accessToken - Access token
+   * @param {string} tokenType - Token type (default: 'bearer')
    */
-  logout: async () => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      try {
-        await fetchAPI('/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-      } catch (error) {
-        console.error('Logout error:', error);
-      }
+  logout: async (accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `${tokenType} ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Logout failed');
     }
+
+    return response.json();
+  },
+};
+
+// Admin API endpoints - requires admin authentication
+export const adminAPI = {
+  /**
+   * Make user admin
+   * @param {string} email - User email to make admin
+   * @param {string} accessToken - Admin access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  makeUserAdmin: async (email, accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/admin/make-admin`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to make user admin');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Create product (Admin)
+   * @param {Object} productData - Product data
+   * @param {string} accessToken - Admin access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  createProduct: async (productData, accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/admin/products`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+      body: JSON.stringify(productData),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to create product');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Update product (Admin)
+   * @param {number} productId - Product ID
+   * @param {Object} productData - Product data to update
+   * @param {string} accessToken - Admin access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  updateProduct: async (productId, productData, accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+      body: JSON.stringify(productData),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to update product');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Delete product (Admin)
+   * @param {number} productId - Product ID
+   * @param {string} accessToken - Admin access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  deleteProduct: async (productId, accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to delete product');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get all products (Admin) - includes inactive products
+   * @param {Object} params - Query parameters
+   * @param {string} accessToken - Admin access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  getAllProducts: async (params = {}, accessToken, tokenType = 'bearer') => {
+    const queryParams = new URLSearchParams();
     
-    // Clear local storage regardless of API call success
-    localStorage.removeItem('token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+    if (params.search) queryParams.append('search', params.search);
+    if (params.min_price) queryParams.append('min_price', params.min_price);
+    if (params.max_price) queryParams.append('max_price', params.max_price);
+
+    const queryString = queryParams.toString();
+    const url = `${API_BASE_URL}/admin/products${queryString ? `?${queryString}` : ''}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to fetch products');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get all orders (Admin)
+   * @param {Object} params - Query parameters
+   * @param {string} accessToken - Admin access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  getAllOrders: async (params = {}, accessToken, tokenType = 'bearer') => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+    if (params.status) queryParams.append('status', params.status);
+
+    const queryString = queryParams.toString();
+    const url = `${API_BASE_URL}/admin/orders${queryString ? `?${queryString}` : ''}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to fetch orders');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Update order status (Admin)
+   * @param {number} orderId - Order ID
+   * @param {string} status - New order status
+   * @param {string} accessToken - Admin access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  updateOrderStatus: async (orderId, status, accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/admin/orders/${orderId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+      body: JSON.stringify({ status }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to update order status');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get all users (Admin)
+   * @param {Object} params - Query parameters
+   * @param {string} accessToken - Admin access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  getAllUsers: async (params = {}, accessToken, tokenType = 'bearer') => {
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+
+    const queryString = queryParams.toString();
+    const url = `${API_BASE_URL}/admin/users${queryString ? `?${queryString}` : ''}`;
+
+    const response = await fetch(url, {
+      headers: {
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to fetch users');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get user by ID (Admin)
+   * @param {number} userId - User ID
+   * @param {string} accessToken - Admin access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  getUserById: async (userId, accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/admin/users/${userId}`, {
+      headers: {
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to fetch user');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get analytics (Admin)
+   * @param {string} accessToken - Admin access token
+   * @param {string} tokenType - Token type (default: 'bearer')
+   */
+  getAnalytics: async (accessToken, tokenType = 'bearer') => {
+    const response = await fetch(`${API_BASE_URL}/admin/analytics`, {
+      headers: {
+        'Authorization': `${tokenType} ${accessToken}`,
+      },
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to fetch analytics');
+    }
+
+    return response.json();
   },
 };
 

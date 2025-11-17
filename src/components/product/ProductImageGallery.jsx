@@ -1,13 +1,17 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+const STATIC_API_URL = 'http://localhost:8000';
 
 const ProductImageGallery = ({ images, productName }) => {
   const [currentImage, setCurrentImage] = useState(0);
 
-  // If no images, show placeholder
-  const displayImages = images && images.length > 0 
-    ? images 
-    : [null]; // null will trigger placeholder
+  // Filter out any null/undefined images and ensure we have valid image URLs
+  const validImages = images && images.length > 0 
+    ? images.filter(img => img && typeof img === 'string' && img.trim() !== '')
+    : [];
+
+  // If no valid images, show placeholder
+  const displayImages = validImages.length > 0 ? validImages : [null]; // null will trigger placeholder
 
   const nextImage = () => {
     setCurrentImage((prev) => (prev + 1) % displayImages.length);
@@ -23,12 +27,16 @@ const ProductImageGallery = ({ images, productName }) => {
       <div className="relative aspect-square bg-gradient-to-br from-stone-100 to-emerald-50 rounded-sm shadow-lg overflow-hidden group">
         {displayImages[currentImage] ? (
           <img
-            src={displayImages[currentImage]}
+            src={`${STATIC_API_URL}${displayImages[currentImage]}`}
             alt={`${productName} - Image ${currentImage + 1}`}
             className="w-full h-full object-cover"
             onError={(e) => {
+              console.error('Failed to load product image:', displayImages[currentImage]);
               e.target.style.display = 'none';
               e.target.nextSibling.style.display = 'flex';
+            }}
+            onLoad={() => {
+              console.log('Successfully loaded product image:', displayImages[currentImage]);
             }}
           />
         ) : null}

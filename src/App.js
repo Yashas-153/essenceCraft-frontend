@@ -9,8 +9,13 @@ import Checkout from './pages/checkout';
 import OrderSuccess from './pages/OrderSuccess';
 import Layout from '@/components/navbar/Layout';  
 import { AuthProvider } from '@/hooks/useAuth';
+import { AdminProvider } from '@/hooks/useAdminAuth';
 import CheckoutPage from './pages/checkout';
 import OrderSuccessPage from './pages/OrderSuccess';
+
+// Admin Components
+import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminProductsPage from './pages/admin/AdminProductsPage';
 
 // Inside your Routes
 import './App.css';
@@ -19,25 +24,30 @@ import Signup from './components/auth/signup';
 function App() {
   return (
     <AuthProvider>
-      <CartProvider>
-        <BrowserRouter>
-          <Layout>
+      <AdminProvider>
+        <CartProvider>
+          <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Home />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/products" element={<Products />} />
-              <Route path="/products/:productId" element={<Product />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order-success/:orderId" element={<OrderSuccess />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/orders/:orderId/success" element={<OrderSuccessPage />} />
+              {/* Public Routes with Layout */}
+              <Route path="/" element={<Layout><Home /></Layout>} />
+              <Route path="/about" element={<Layout><About /></Layout>} />
+              <Route path="/products" element={<Layout><Products /></Layout>} />
+              <Route path="/products/:productId" element={<Layout><Product /></Layout>} />
+              <Route path="/cart" element={<Layout><Cart /></Layout>} />
+              <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
+              <Route path="/order-success/:orderId" element={<Layout><OrderSuccess /></Layout>} />
+              <Route path="/login" element={<Layout><Login /></Layout>} />
+              <Route path="/signup" element={<Layout><Signup /></Layout>} />
+              <Route path="/orders/:orderId/success" element={<Layout><OrderSuccessPage /></Layout>} />
+              
+              {/* Admin Routes (No main layout, use AdminLayout) */}
+              <Route path="/admin" element={<AdminDashboardPage />} />
+              <Route path="/admin/products" element={<AdminProductsPage />} />
+              {/* Add more admin routes here as needed */}
             </Routes>
-          </Layout>
-        </BrowserRouter>
-      </CartProvider>
+          </BrowserRouter>
+        </CartProvider>
+      </AdminProvider>
     </AuthProvider>
   );
 }

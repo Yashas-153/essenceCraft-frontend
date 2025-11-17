@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback, createContext, useContext } from 'react';
-import { authAPI } from '@/services/api';
+import { authAPI } from '../services/api.js';
 
 // Create Auth Context
-const AuthContext = createContext();
+const AuthContext = createContext(null);
 
 /**
  * Auth Provider Component
@@ -10,132 +10,210 @@ const AuthContext = createContext();
  */
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [tokens, setTokensState] = useState(() => {
+    const stored = localStorage.getItem('auth_tokens');
+    return stored ? JSON.parse(stored) : null;
+  });
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  // Set tokens in state and localStorage
+  const setTokens = useCallback((tokenData) => {
+    if (tokenData) {
+      localStorage.setItem('auth_tokens', JSON.stringify(tokenData));
+      setTokensState(tokenData);
+    } else {
+      localStorage.removeItem('auth_tokens');
+      setTokensState(null);
+    }
+  }, []);
 
   // Check if user is logged in on mount
   useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = useCallback(async () => {
-    const token = localStorage.getItem('token');
-    const storedUser = localStorage.getItem('user');
-
-    if (token && storedUser) {
-      try {
-        setUser(JSON.parse(storedUser));
-        setIsAuthenticated(true);
-        // Optionally verify token with backend
-        // const userData = await authAPI.getCurrentUser();
-        // setUser(userData);
-      } catch (err) {
-        console.error('Auth check failed:', err);
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
-        setUser(null);
-        setIsAuthenticated(false);
-      }
-    } else {
-      setUser(null);
-      setIsAuthenticated(false);
-    }
-    setLoading(false);
-  }, []);
-
-  /**
-   * Login with email and password
-   */
-  const login = useCallback(async (email, password) => {
-    try {
-      setError(null);
-      const response = await authAPI.login(email, password);
-
-      // Store tokens and user data
-      if (response.access_token) {
-        localStorage.setItem('token', response.access_token);
-        if (response.refresh_token) {
-          localStorage.setItem('refresh_token', response.refresh_token);
-        }
-        localStorage.setItem('user', JSON.stringify(response.user));
-        
-        setUser(response.user);
-        setIsAuthenticated(true);
-
-        return { success: true, user: response.user };
-      }
-
-      return { success: false, error: 'Invalid response from server' };
-    } catch (err) {
-      const errorMessage = err.message || 'Invalid email or password';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
+    if (tokens?.access_token) {
+      getCurrentUser();
     }
   }, []);
 
   /**
    * Register new user
    */
-  const register = useCallback(async (userData) => {
+  const register = useCallback(async (email, firstName, lastName, password) => {
+    setLoading(true);
+    setError(null);
     try {
-      setError(null);
-      const response = await authAPI.register(userData);
-
-      // After registration, might auto-login or require email verification
-      if (response.access_token) {
-        localStorage.setItem('token', response.access_token);
-        if (response.refresh_token) {
-          localStorage.setItem('refresh_token', response.refresh_token);
-        }
-        localStorage.setItem('user', JSON.stringify(response.user || response));
-        
-        setUser(response.user || response);
-        setIsAuthenticated(true);
-      }
-
-      return { success: true, user: response.user || response };
+      const userData = await authAPI.register(email, firstName, lastName, password);
+      setUser(userData);
+      return { success: true, user: userData };
     } catch (err) {
-      const errorMessage = err.message || 'Failed to register';
-      setError(errorMessage);
-      return { success: false, error: errorMessage };
+      const message = err.message || 'Registration failed';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
     }
   }, []);
+
+  /**
+   * Login with email and password
+   */
+  const login = useCallback(async (email, password) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await authAPI.login(email, password);
+      setTokens({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        token_type: data.token_type,
+      });
+      setUser(data.user);
+      return { success: true, user: data.user };
+    } catch (err) {
+      const message = err.message || 'Login failed';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  }, [setTokens]);
+
+  /**
+   * Verify email with token
+   */
+  const verifyEmail = useCallback(async (token) => {
+    setLoading(true);
+    setError(null);
+    try {
+      await authAPI.verifyEmail(token);
+      setUser((prev) => (prev ? { ...prev, is_verified: true } : null));
+      return { success: true };
+    } catch (err) {
+      const message = err.message || 'Email verification failed';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Request OTP for phone verification
+   */
+  const addPhone = useCallback(async (phone) => {
+    if (!tokens?.access_token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await authAPI.addPhone(phone, tokens.access_token, tokens.token_type);
+      return { success: true };
+    } catch (err) {
+      const message = err.message || 'Failed to send OTP';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  }, [tokens?.access_token, tokens?.token_type]);
+
+  /**
+   * Verify phone with OTP
+   */
+  const verifyPhone = useCallback(async (phone, otp) => {
+    if (!tokens?.access_token) {
+      return { success: false, error: 'Not authenticated' };
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      await authAPI.verifyPhone(phone, otp, tokens.access_token, tokens.token_type);
+      setUser((prev) =>
+        prev ? { ...prev, phone, is_verified: true } : null
+      );
+      return { success: true };
+    } catch (err) {
+      const message = err.message || 'Phone verification failed';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  }, [tokens?.access_token, tokens?.token_type]);
+
+  /**
+   * Refresh access token
+   */
+  const refreshTokens = useCallback(async () => {
+    if (!tokens?.refresh_token) {
+      return { success: false };
+    }
+    try {
+      const data = await authAPI.refreshToken(tokens.refresh_token);
+      setTokens({
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        token_type: data.token_type,
+      });
+      setUser(data.user);
+      return { success: true };
+    } catch (err) {
+      setTokens(null);
+      setUser(null);
+      return { success: false };
+    }
+  }, [tokens?.refresh_token, setTokens]);
+
+  /**
+   * Get current user profile
+   */
+  const getCurrentUser = useCallback(async () => {
+    if (!tokens?.access_token) {
+      return { success: false };
+    }
+    setLoading(true);
+    try {
+      const userData = await authAPI.getCurrentUser(tokens.access_token, tokens.token_type);
+      setUser(userData);
+      return { success: true, user: userData };
+    } catch (err) {
+      return { success: false, error: err.message };
+    } finally {
+      setLoading(false);
+    }
+  }, [tokens?.access_token, tokens?.token_type]);
 
   /**
    * Logout user
    */
   const logout = useCallback(async () => {
-    try {
-      await authAPI.logout();
-    } catch (err) {
-      console.error('Logout error:', err);
-    } finally {
-      setUser(null);
-      setIsAuthenticated(false);
-      setError(null);
+    if (tokens?.access_token) {
+      try {
+        await authAPI.logout(tokens.access_token, tokens.token_type);
+      } catch (err) {
+        console.error('Logout API error:', err);
+      }
     }
-  }, []);
-
-  /**
-   * Update user data
-   */
-  const updateUser = useCallback((userData) => {
-    setUser(userData);
-    localStorage.setItem('user', JSON.stringify(userData));
-  }, []);
+    setTokens(null);
+    setUser(null);
+    setError(null);
+  }, [tokens?.access_token, tokens?.token_type, setTokens]);
 
   const value = {
     user,
+    tokens,
     loading,
     error,
-    isAuthenticated,
-    login,
+    isAuthenticated: !!tokens?.access_token,
     register,
+    login,
     logout,
-    updateUser,
-    checkAuth,
+    verifyEmail,
+    addPhone,
+    verifyPhone,
+    refreshTokens,
+    getCurrentUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

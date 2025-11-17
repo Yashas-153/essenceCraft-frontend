@@ -1,87 +1,87 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ArrowLeft, Mail, Lock, User, Phone, Loader2, Eye, EyeOff } from 'lucide-react';
-
+import { useAuth } from '../../hooks/useAuth';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Mail, Lock, User, Loader2, Eye, EyeOff, P } from 'lucide-react';
 
 const Signup = () => {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, loading: authLoading } = useAuth();
 
   const [formData, setFormData] = useState({
     email: '',
+    firstName: '',
+    lastName: '',
     password: '',
     confirmPassword: '',
-    username: '',
-    first_name: '',
-    last_name: '',
-    phone: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      errors.email = 'Invalid email format';
+    }
+    if (formData.firstName.trim().length < 2) {
+      errors.firstName = 'First name must be at least 2 characters';
+    }
+    if (formData.lastName.trim().length < 2) {
+      errors.lastName = 'Last name must be at least 2 characters';
+    }
+    if (formData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      errors.password = 'Password must contain uppercase letter';
+    }
+    if (!/[a-z]/.test(formData.password)) {
+      errors.password = 'Password must contain lowercase letter';
+    }
+    if (!/\d/.test(formData.password)) {
+      errors.password = 'Password must contain a digit';
+    }
+    if (formData.password !== formData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (validationErrors[name]) {
+      setValidationErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Validation
-    if (!formData.email || !formData.password || !formData.username || !formData.first_name) {
-      setError('Please fill in all required fields');
-      return;
-    }
+    if (!validateForm()) return;
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    // Username validation
-    const usernameRegex = /^[a-zA-Z0-9_]+$/;
-    if (!usernameRegex.test(formData.username)) {
-      setError('Username can only contain letters, numbers, and underscores');
-      return;
-    }
-
-    // Password validation
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
-      return;
-    }
-
-    // Password match
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    // Prepare registration data (excluding confirmPassword)
-    const { confirmPassword, ...registrationData } = formData;
-
-    setLoading(true);
-    const result = await register(registrationData);
-    setLoading(false);
+    const result = await register(
+      formData.email,
+      formData.firstName,
+      formData.lastName,
+      formData.password
+    );
 
     if (result.success) {
-      // Redirect to home or show success message
-      navigate('/', { 
-        state: { message: 'Account created successfully!' } 
-      });
+      setShowSuccess(true);
+      setTimeout(() => {
+        navigate('/verify-email', { state: { email: formData.email } });
+      }, 2000);
     } else {
-      setError(result.error || 'Failed to create account');
+      setError(result.error || 'Registration failed');
     }
   };
 
@@ -99,6 +99,13 @@ const Signup = () => {
               Join essenceKRAFT today
             </p>
           </div>
+
+          {/* Success message */}
+          {showSuccess && (
+            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-sm">
+              <p className="text-sm text-emerald-600">✓ Account created! Redirecting to email verification...</p>
+            </div>
+          )}
 
           {/* Error message */}
           {error && (
@@ -123,28 +130,12 @@ const Signup = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="pl-10 h-12"
-                  required
+                  disabled={authLoading}
                 />
               </div>
-            </div>
-
-            {/* Username */}
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                Username <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 w-5 h-5" />
-                <Input
-                  type="text"
-                  name="username"
-                  placeholder="johndoe123"
-                  value={formData.username}
-                  onChange={handleChange}
-                  className="pl-10 h-12"
-                  required
-                />
-              </div>
+              {validationErrors.email && (
+                <span className="text-xs text-red-600 mt-1">{validationErrors.email}</span>
+              )}
             </div>
 
             {/* Name fields in grid */}
@@ -156,46 +147,35 @@ const Signup = () => {
                 </label>
                 <Input
                   type="text"
-                  name="first_name"
+                  name="firstName"
                   placeholder="John"
-                  value={formData.first_name}
+                  value={formData.firstName}
                   onChange={handleChange}
                   className="h-12"
-                  required
+                  disabled={authLoading}
                 />
+                {validationErrors.firstName && (
+                  <span className="text-xs text-red-600 mt-1">{validationErrors.firstName}</span>
+                )}
               </div>
 
               {/* Last Name */}
               <div>
                 <label className="block text-sm font-medium text-stone-700 mb-2">
-                  Last Name
+                  Last Name <span className="text-red-500">*</span>
                 </label>
                 <Input
                   type="text"
-                  name="last_name"
+                  name="lastName"
                   placeholder="Doe"
-                  value={formData.last_name}
+                  value={formData.lastName}
                   onChange={handleChange}
                   className="h-12"
+                  disabled={authLoading}
                 />
-              </div>
-            </div>
-
-            {/* Phone (optional) */}
-            <div>
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                Phone Number
-              </label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 text-stone-400 w-5 h-5" />
-                <Input
-                  type="tel"
-                  name="phone"
-                  placeholder="+91 1234567890"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  className="pl-10 h-12"
-                />
+                {validationErrors.lastName && (
+                  <span className="text-xs text-red-600 mt-1">{validationErrors.lastName}</span>
+                )}
               </div>
             </div>
 
@@ -213,18 +193,25 @@ const Signup = () => {
                   value={formData.password}
                   onChange={handleChange}
                   className="pl-10 pr-10 h-12"
-                  required
+                  disabled={authLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-600"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
+              {validationErrors.password && (
+                <span className="text-xs text-red-600 mt-1">{validationErrors.password}</span>
+              )}
               <p className="text-xs text-stone-500 mt-1">
-                At least 8 characters
+                Min 8 chars, 1 uppercase, 1 lowercase, 1 digit
               </p>
             </div>
 
@@ -242,25 +229,32 @@ const Signup = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   className="pl-10 pr-10 h-12"
-                  required
+                  disabled={authLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-stone-400 hover:text-stone-600"
                 >
-                  {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-5 h-5" />
+                  ) : (
+                    <Eye className="w-5 h-5" />
+                  )}
                 </button>
               </div>
+              {validationErrors.confirmPassword && (
+                <span className="text-xs text-red-600 mt-1">{validationErrors.confirmPassword}</span>
+              )}
             </div>
 
             {/* Submit button */}
             <Button
               type="submit"
-              disabled={loading}
+              disabled={authLoading}
               className="w-full bg-emerald-700 hover:bg-emerald-800 text-white h-12 text-lg rounded-sm mt-6"
             >
-              {loading ? (
+              {authLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Creating Account...
@@ -287,8 +281,8 @@ const Signup = () => {
           <div className="mt-8 pt-6 border-t border-stone-200">
             <p className="text-center text-sm text-stone-600">
               Already have an account?{' '}
-              <Link 
-                to="/login" 
+              <Link
+                to="/login"
                 className="text-emerald-700 hover:text-emerald-800 font-medium"
               >
                 Login

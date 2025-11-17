@@ -1,57 +1,64 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ArrowLeft, Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
-
+import { useAuth } from '../../hooks/useAuth';
+import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
+import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, loading: authLoading } = useAuth();
 
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      errors.email = 'Invalid email format';
+    }
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (validationErrors[name]) {
+      setValidationErrors((prev) => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Validation
-    if (!formData.email || !formData.password) {
-      setError('Please fill in all fields');
-      return;
-    }
+    if (!validateForm()) return;
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email)) {
-      setError('Please enter a valid email address');
-      return;
-    }
-
-    setLoading(true);
     const result = await login(formData.email, formData.password);
-    setLoading(false);
 
     if (result.success) {
-      // Redirect to home or intended page
-      navigate('/');
+      setShowSuccess(true);
+      setTimeout(() => {
+        if (result.user.is_verified) {
+          navigate('/');
+        } else {
+          navigate('/verify-email', { state: { email: result.user.email } });
+        }
+      }, 1500);
     } else {
-      setError(result.error || 'Invalid email or password');
+      setError(result.error || 'Login failed');
     }
   };
 
@@ -69,6 +76,13 @@ const Login = () => {
               Login to your essenceKRAFT account
             </p>
           </div>
+
+          {/* Success message */}
+          {showSuccess && (
+            <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-sm">
+              <p className="text-sm text-emerald-600">✓ Login successful! Redirecting...</p>
+            </div>
+          )}
 
           {/* Error message */}
           {error && (
@@ -93,9 +107,12 @@ const Login = () => {
                   value={formData.email}
                   onChange={handleChange}
                   className="pl-10 h-12"
-                  required
+                  disabled={authLoading}
                 />
               </div>
+              {validationErrors.email && (
+                <span className="text-xs text-red-600 mt-1">{validationErrors.email}</span>
+              )}
             </div>
 
             {/* Password */}
@@ -104,8 +121,8 @@ const Login = () => {
                 <label className="block text-sm font-medium text-stone-700">
                   Password
                 </label>
-                <Link 
-                  to="/forgot-password" 
+                <Link
+                  to="/forgot-password"
                   className="text-sm text-emerald-700 hover:text-emerald-800"
                 >
                   Forgot password?
@@ -120,7 +137,7 @@ const Login = () => {
                   value={formData.password}
                   onChange={handleChange}
                   className="pl-10 pr-10 h-12"
-                  required
+                  disabled={authLoading}
                 />
                 <button
                   type="button"
@@ -134,15 +151,18 @@ const Login = () => {
                   )}
                 </button>
               </div>
+              {validationErrors.password && (
+                <span className="text-xs text-red-600 mt-1">{validationErrors.password}</span>
+              )}
             </div>
 
             {/* Submit button */}
             <Button
               type="submit"
-              disabled={loading}
+              disabled={authLoading}
               className="w-full bg-emerald-700 hover:bg-emerald-800 text-white h-12 text-lg rounded-sm"
             >
-              {loading ? (
+              {authLoading ? (
                 <>
                   <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Logging in...
@@ -157,8 +177,8 @@ const Login = () => {
           <div className="mt-8 pt-6 border-t border-stone-200">
             <p className="text-center text-sm text-stone-600">
               Don't have an account?{' '}
-              <Link 
-                to="/signup" 
+              <Link
+                to="/signup"
                 className="text-emerald-700 hover:text-emerald-800 font-medium"
               >
                 Create account
