@@ -6,6 +6,7 @@ const PaymentMethod = ({
   selectedMethod = 'upi',
   onSelectMethod = () => {},
   onBack = () => {},
+  onContinue = () => {},
   onPlaceOrder = () => {},
   isProcessing = false
 }) => {
@@ -159,7 +160,7 @@ const PaymentMethod = ({
           Back
         </Button>
         <Button
-          onClick={onPlaceOrder}
+          onClick={onContinue || onPlaceOrder}
           disabled={isProcessing || !selectedMethod}
           className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white py-3 text-lg disabled:opacity-50"
         >
@@ -169,7 +170,7 @@ const PaymentMethod = ({
               Processing...
             </>
           ) : (
-            'Place Order'
+            onContinue ? 'Continue to Shipping' : 'Place Order'
           )}
         </Button>
       </div>

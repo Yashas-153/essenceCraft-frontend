@@ -592,4 +592,180 @@ export const adminAPI = {
   },
 };
 
+// Shiprocket API endpoints
+export const shiprocketAPI = {
+  // Order Management
+  createOrder: async (orderData) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI('/shiprocket/orders', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(orderData),
+    });
+  },
+
+  getOrder: async (orderId) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI(`/shiprocket/orders/${orderId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  cancelOrders: async (data) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI('/shiprocket/orders/cancel', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Courier Management
+  checkServiceability: async (data) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI('/shiprocket/couriers/serviceability', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  getCouriers: async () => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI('/shiprocket/couriers', {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Shipment Management
+  createShipment: async (data) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI('/shiprocket/shipments', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  schedulePickup: async (shipmentId) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI(`/shiprocket/shipments/${shipmentId}/pickup`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  generateManifest: async (data) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI('/shiprocket/shipments/manifest', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  generateLabel: async (data) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI('/shiprocket/shipments/label', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  generateInvoice: async (data) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI('/shiprocket/orders/invoice', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  // Tracking
+  trackByShipmentId: async (shipmentId) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI(`/shiprocket/tracking/shipment/${shipmentId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  trackByAwbCode: async (awbCode) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI(`/shiprocket/tracking/awb/${awbCode}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  getUserShipments: async (params = {}) => {
+    const token = authAPI.getStoredToken();
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page);
+    if (params.limit) queryParams.append('limit', params.limit);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/shiprocket/shipments?${queryString}` : '/shiprocket/shipments';
+    
+    return fetchAPI(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+
+  // Returns & Exchanges
+  createReturnOrder: async (data) => {
+    const token = authAPI.getStoredToken();
+    return fetchAPI('/shiprocket/returns', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
+  },
+
+  getReturnOrders: async (params = {}) => {
+    const token = authAPI.getStoredToken();
+    const queryParams = new URLSearchParams();
+    
+    if (params.page) queryParams.append('page', params.page);
+    if (params.per_page) queryParams.append('per_page', params.per_page);
+
+    const queryString = queryParams.toString();
+    const endpoint = queryString ? `/shiprocket/returns?${queryString}` : '/shiprocket/returns';
+    
+    return fetchAPI(endpoint, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+};
+
 export default fetchAPI;

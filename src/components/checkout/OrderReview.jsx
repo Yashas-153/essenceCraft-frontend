@@ -6,6 +6,7 @@ const OrderReview = ({
   cart,
   selectedAddress,
   paymentMethod,
+  shippingDetails,
   totals,
   onBack = () => {},
   onPlaceOrder = () => {},
@@ -79,6 +80,34 @@ const OrderReview = ({
           Change Payment Method
         </Button>
       </div>
+
+      {/* Shipping Details */}
+      {shippingDetails && (
+        <div className="bg-stone-50 border border-stone-200 rounded-lg p-6">
+          <div className="flex items-start gap-3 mb-4">
+            <Package className="w-5 h-5 text-emerald-700 mt-0.5" />
+            <div>
+              <h3 className="font-semibold text-stone-900 mb-2">Shipping Details</h3>
+              <div className="space-y-2 text-stone-700">
+                <p><span className="font-medium">Courier:</span> {shippingDetails.courier?.name}</p>
+                <p><span className="font-medium">Delivery Time:</span> {shippingDetails.courier?.estimated_delivery_days || 'N/A'}</p>
+                <p><span className="font-medium">Shipping Cost:</span> ₹{shippingDetails.shippingCost || 0}</p>
+                {shippingDetails.courier?.rating && (
+                  <p><span className="font-medium">Courier Rating:</span> {shippingDetails.courier.rating}/5</p>
+                )}
+              </div>
+            </div>
+          </div>
+          <Button
+            onClick={onBack}
+            variant="outline"
+            size="sm"
+            className="text-emerald-700 border-emerald-700 hover:bg-emerald-50"
+          >
+            Change Shipping
+          </Button>
+        </div>
+      )}
 
       {/* Order Items */}
       <div className="bg-stone-50 border border-stone-200 rounded-lg p-6">

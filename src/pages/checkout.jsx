@@ -5,6 +5,7 @@ import { useCart } from '@/hooks/useCart';
 import useRazorpayPayment from '@/hooks/useRazorPayment';
 import AddressSelector from '@/components/checkout/AddressSelector';
 import PaymentMethod from '@/components/checkout/PaymentMethod';
+import CheckoutShipping from '@/components/checkout/CheckoutShipping';
 import OrderReview from '@/components/checkout/OrderReview';
 import { useToast } from '@/components/ui/use-toast';
 import { ToastContainer } from '@/components/ui/toast';
@@ -18,12 +19,13 @@ const CheckoutPage = () => {
   const { toast, toasts, dismiss } = useToast();
 
   // State management
-  const [step, setStep] = useState(1); // 1: Address, 2: Payment, 3: Review
+  const [step, setStep] = useState(1); // 1: Address, 2: Payment, 3: Shipping, 4: Review
   const [addresses, setAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('upi');
   const [loading, setLoading] = useState(true);
   const [userDetails, setUserDetails] = useState(null);
+  const [shippingDetails, setShippingDetails] = useState(null);
 
   // Redirect if not authenticated
   useEffect(() => {
@@ -212,7 +214,7 @@ const CheckoutPage = () => {
 
         {/* Progress Steps */}
         <div className="mb-8">
-          <div className="flex items-center justify-between max-w-2xl mx-auto">
+          <div className="flex items-center justify-between max-w-4xl mx-auto">
             {/* Step 1: Address */}
             <div className="flex flex-col items-center flex-1">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
@@ -226,7 +228,7 @@ const CheckoutPage = () => {
             </div>
 
             {/* Connector */}
-            <div className={`h-1 flex-1 mx-4 ${step >= 2 ? 'bg-emerald-700' : 'bg-stone-300'}`} />
+            <div className={`h-1 flex-1 mx-2 ${step >= 2 ? 'bg-emerald-700' : 'bg-stone-300'}`} />
 
             {/* Step 2: Payment */}
             <div className="flex flex-col items-center flex-1">
@@ -241,16 +243,31 @@ const CheckoutPage = () => {
             </div>
 
             {/* Connector */}
-            <div className={`h-1 flex-1 mx-4 ${step >= 3 ? 'bg-emerald-700' : 'bg-stone-300'}`} />
+            <div className={`h-1 flex-1 mx-2 ${step >= 3 ? 'bg-emerald-700' : 'bg-stone-300'}`} />
 
-            {/* Step 3: Review */}
+            {/* Step 3: Shipping */}
             <div className="flex flex-col items-center flex-1">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
                 step >= 3 ? 'bg-emerald-700 text-white' : 'bg-stone-300 text-stone-600'
               }`}>
-                3
+                {step > 3 ? <CheckCircle2 className="w-6 h-6" /> : '3'}
               </div>
               <span className={`text-sm ${step >= 3 ? 'text-emerald-700 font-medium' : 'text-stone-500'}`}>
+                Shipping
+              </span>
+            </div>
+
+            {/* Connector */}
+            <div className={`h-1 flex-1 mx-2 ${step >= 4 ? 'bg-emerald-700' : 'bg-stone-300'}`} />
+
+            {/* Step 4: Review */}
+            <div className="flex flex-col items-center flex-1">
+              <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-2 ${
+                step >= 4 ? 'bg-emerald-700 text-white' : 'bg-stone-300 text-stone-600'
+              }`}>
+                4
+              </div>
+              <span className={`text-sm ${step >= 4 ? 'text-emerald-700 font-medium' : 'text-stone-500'}`}>
                 Review
               </span>
             </div>
@@ -279,19 +296,36 @@ const CheckoutPage = () => {
                   selectedMethod={paymentMethod}
                   onSelectMethod={setPaymentMethod}
                   onBack={() => setStep(1)}
-                  onPlaceOrder={handlePlaceOrder}
+                  onContinue={() => setStep(3)}
                   isProcessing={isProcessing}
                 />
               )}
 
-              {/* Step 3: Order Review */}
+              {/* Step 3: Shipping Options */}
               {step === 3 && (
+                <CheckoutShipping
+                  orderData={{
+                    total: totals?.total,
+                    totalWeight: cart?.items?.reduce((sum, item) => sum + (item.product?.weight || 0.5) * item.quantity, 0) || 0.5,
+                    paymentMethod: paymentMethod,
+                    items: cart?.items || []
+                  }}
+                  selectedAddress={addresses.find(addr => addr.id === selectedAddressId)}
+                  onShippingSelect={setShippingDetails}
+                  onBack={() => setStep(2)}
+                  onContinue={() => setStep(4)}
+                />
+              )}
+
+              {/* Step 4: Order Review */}
+              {step === 4 && (
                 <OrderReview
                   cart={cart}
                   selectedAddress={addresses.find(addr => addr.id === selectedAddressId)}
                   paymentMethod={paymentMethod}
+                  shippingDetails={shippingDetails}
                   totals={totals}
-                  onBack={() => setStep(2)}
+                  onBack={() => setStep(3)}
                   onPlaceOrder={handlePlaceOrder}
                   isProcessing={isProcessing}
                 />

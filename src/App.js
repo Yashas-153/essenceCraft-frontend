@@ -10,12 +10,16 @@ import OrderSuccess from './pages/OrderSuccess';
 import Layout from '@/components/navbar/Layout';  
 import { AuthProvider } from '@/hooks/useAuth';
 import { AdminProvider } from '@/hooks/useAdminAuth';
-import CheckoutPage from './pages/checkout';
-import OrderSuccessPage from './pages/OrderSuccess';
+import OrderSuccessPage from '@/pages/OrderSuccess';
 
 // Admin Components
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminProductsPage from './pages/admin/AdminProductsPage';
+import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import AdminShipmentsPage from './pages/admin/AdminShipmentsPage';
+
+// Order Tracking Components
+import OrderStatusPage from './pages/OrderStatusPage';
 
 // Inside your Routes
 import './App.css';
@@ -40,9 +44,16 @@ function App() {
               <Route path="/signup" element={<Layout><Signup /></Layout>} />
               <Route path="/orders/:orderId/success" element={<Layout><OrderSuccessPage /></Layout>} />
               
+              {/* Order Tracking Routes */}
+              <Route path="/track" element={<Layout><OrderStatusPage /></Layout>} />
+              <Route path="/track/shipment/:shipmentId" element={<Layout><OrderStatusPage /></Layout>} />
+              <Route path="/track/awb/:awbCode" element={<Layout><OrderStatusPage /></Layout>} />
+              
               {/* Admin Routes (No main layout, use AdminLayout) */}
               <Route path="/admin" element={<AdminDashboardPage />} />
               <Route path="/admin/products" element={<AdminProductsPage />} />
+              <Route path="/admin/orders" element={<AdminOrdersPage />} />
+              <Route path="/admin/shipments" element={<AdminShipmentsPage />} />
               {/* Add more admin routes here as needed */}
             </Routes>
           </BrowserRouter>
