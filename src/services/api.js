@@ -4,22 +4,32 @@ const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:800
 // Generic fetch wrapper with error handling
 const fetchAPI = async (endpoint, options = {}) => {
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const fullUrl = `${API_BASE_URL}${endpoint}`;
+    console.log('📡 [fetchAPI] Making request to:', fullUrl);
+    console.log('📡 [fetchAPI] Method:', options.method || 'GET');
+    
+    const response = await fetch(fullUrl, {
+      ...options,
       headers: {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...(options.headers || {}),
       },
-      ...options,
     });
+
+    console.log('📡 [fetchAPI] Response status:', response.status);
+    console.log('📡 [fetchAPI] Response ok:', response.ok);
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({}));
+      console.error('📡 [fetchAPI] Error response:', error);
       throw new Error(error.message || `HTTP error! status: ${response.status}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log('📡 [fetchAPI] Response data:', data);
+    return data;
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('📡 [fetchAPI] Catch error:', error);
     throw error;
   }
 };
@@ -55,7 +65,15 @@ export const productsAPI = {
    * @param {number} productId - Product ID
    */
   getProductById: async (productId) => {
-    return fetchAPI(`/products/${productId}`);
+    console.log('📦 [productsAPI.getProductById] Fetching product with ID:', productId);
+    try {
+      const data = await fetchAPI(`/products/${productId}`);
+      console.log('📦 [productsAPI.getProductById] Product fetched:', data);
+      return data;
+    } catch (error) {
+      console.error('📦 [productsAPI.getProductById] Failed to fetch product:', error);
+      throw error;
+    }
   },
 };
 
@@ -82,6 +100,7 @@ export const cartAPI = {
     return fetchAPI('/cart/items', {
       method: 'POST',
       headers: {
+        'Content-Type': 'application/json',   // ← REQUIRED
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
       body: JSON.stringify({
@@ -90,6 +109,7 @@ export const cartAPI = {
       }),
     });
   },
+
 
   /**
    * Update cart item quantity
@@ -100,6 +120,7 @@ export const cartAPI = {
     return fetchAPI(`/cart/items/${itemId}`, {
       method: 'PUT',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
       body: JSON.stringify({
@@ -116,6 +137,7 @@ export const cartAPI = {
     return fetchAPI(`/cart/items/${itemId}`, {
       method: 'DELETE',
       headers: {
+        'Content-Type': 'application/json',
         'Authorization': `Bearer ${localStorage.getItem('token')}`,
       },
     });
@@ -172,6 +194,7 @@ export const authAPI = {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
       },
     });
   },
@@ -198,6 +221,7 @@ export const authAPI = {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
           },
         });
       } catch (error) {

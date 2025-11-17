@@ -1,40 +1,91 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button } from '../ui/button';
-import { Input } from '../ui/input';
-import { ShoppingBag, Tag, ArrowRight, Lock } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { ShoppingBag, Tag, ArrowRight, Lock, Loader2, AlertCircle } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
+import { ToastContainer } from '@/components/ui/toast';
 
-const CartSummary = ({ cartTotals }) => {
+const CartSummary = ({ cartTotals, userDetails, selectedAddressId, isLocalCart = false }) => {
   const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { currency } = useCart();
+  const { toast, toasts, dismiss } = useToast();
   const [promoCode, setPromoCode] = useState('');
   const [promoApplied, setPromoApplied] = useState(false);
   const [promoDiscount, setPromoDiscount] = useState(0);
 
+  // Get currency symbol
+  const currencySymbol = currency?.symbol || '$';
+
+  console.log('💱 CartSummary Currency:', { currency, currencySymbol });
+
   // Calculate totals
   const subtotal = cartTotals.subtotal;
-  const shipping = subtotal > 50 ? 0 : 5.99; // Free shipping over $50
+  const shipping = subtotal > 50 ? 0 : 5.99; // Free shipping over ₹50
   const tax = subtotal * 0.08; // 8% tax (example)
   const discount = promoApplied ? promoDiscount : 0;
   const total = subtotal + shipping + tax - discount;
 
   const handleApplyPromo = () => {
-    // TODO: Implement promo code validation
+    // TODO: Implement promo code validation with backend
     if (promoCode.toUpperCase() === 'WELCOME10') {
       setPromoApplied(true);
       setPromoDiscount(subtotal * 0.1); // 10% off
+      toast({
+        title: 'Promo code applied!',
+        description: '10% discount has been applied to your order.',
+        variant: 'success'
+      });
     } else {
-      alert('Invalid promo code');
+      toast({
+        title: 'Invalid promo code',
+        description: 'The promo code you entered is not valid.',
+        variant: 'destructive'
+      });
     }
   };
 
-  const handleCheckout = () => {
-    // TODO: Navigate to checkout page or process payment
-    console.log('Proceeding to checkout...');
-    // navigate('/checkout');
+  const handleCheckout = async () => {
+    // If user is not logged in, redirect to login
+    if (!isAuthenticated && isLocalCart) {
+      toast({
+        title: 'Login required',
+        description: 'Please login or sign up to proceed with checkout.',
+        variant: 'destructive'
+      });
+      navigate('/login');
+      return;
+    }
+
+    if (!userDetails || !userDetails.email) {
+      toast({
+        title: 'Login required',
+        description: 'Please login to complete your purchase.',
+        variant: 'destructive'
+      });
+      navigate('/login');
+      return;
+    }
+
+    if (cartTotals.itemCount === 0) {
+      toast({
+        title: 'Cart is empty',
+        description: 'Add some items to your cart before checkout.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    // Navigate to checkout page
+    navigate('/checkout');
   };
 
   return (
-    <div className="bg-white rounded-sm shadow-md border border-stone-100 sticky top-6">
+    <>
+      <div className="bg-white rounded-sm shadow-md border border-stone-100 sticky top-6">
       {/* Header */}
       <div className="border-b border-stone-200 px-6 py-4">
         <h2 className="text-xl font-semibold text-stone-900">Order Summary</h2>
@@ -48,7 +99,7 @@ const CartSummary = ({ cartTotals }) => {
             <ShoppingBag className="w-4 h-4" />
             <span>Items ({cartTotals.itemCount})</span>
           </div>
-          <span className="font-medium">${subtotal.toFixed(2)}</span>
+          <span className="font-medium">{currencySymbol}{subtotal.toFixed(2)}</span>
         </div>
 
         {/* Promo code */}
@@ -86,7 +137,7 @@ const CartSummary = ({ cartTotals }) => {
         <div className="pt-4 border-t border-stone-200 space-y-3">
           <div className="flex justify-between text-stone-600">
             <span>Subtotal</span>
-            <span>${subtotal.toFixed(2)}</span>
+            <span>{currencySymbol}{subtotal.toFixed(2)}</span>
           </div>
 
           <div className="flex justify-between text-stone-600">
@@ -96,24 +147,24 @@ const CartSummary = ({ cartTotals }) => {
                 <span className="text-xs text-emerald-600 font-medium">(Free)</span>
               )}
             </div>
-            <span>{shipping === 0 ? 'FREE' : `$${shipping.toFixed(2)}`}</span>
+            <span>{shipping === 0 ? 'FREE' : `${currencySymbol}${shipping.toFixed(2)}`}</span>
           </div>
 
           {shipping > 0 && (
             <p className="text-xs text-stone-500">
-              Add ${(50 - subtotal).toFixed(2)} more for free shipping
+              Add {currencySymbol}{(50 - subtotal).toFixed(2)} more for free shipping
             </p>
           )}
 
           <div className="flex justify-between text-stone-600">
             <span>Tax (8%)</span>
-            <span>${tax.toFixed(2)}</span>
+            <span>{currencySymbol}{tax.toFixed(2)}</span>
           </div>
 
           {promoApplied && (
             <div className="flex justify-between text-emerald-600">
               <span>Discount</span>
-              <span>-${discount.toFixed(2)}</span>
+              <span>-{currencySymbol}{discount.toFixed(2)}</span>
             </div>
           )}
         </div>
@@ -123,7 +174,7 @@ const CartSummary = ({ cartTotals }) => {
           <div className="flex justify-between items-baseline mb-2">
             <span className="text-lg font-semibold text-stone-900">Total</span>
             <span className="text-3xl font-bold text-emerald-700">
-              ${total.toFixed(2)}
+              {currencySymbol}{total.toFixed(2)}
             </span>
           </div>
           <p className="text-xs text-stone-500">
@@ -131,19 +182,49 @@ const CartSummary = ({ cartTotals }) => {
           </p>
         </div>
 
-        {/* Checkout button */}
-        <Button
-          onClick={handleCheckout}
-          className="w-full bg-emerald-700 hover:bg-emerald-800 text-white h-14 text-lg rounded-sm shadow-lg hover:shadow-xl transition-all duration-300"
-        >
-          Proceed to Checkout
-          <ArrowRight className="w-5 h-5 ml-2" />
-        </Button>
+        {/* Error message - removed since checkout moved to separate page */}
+
+        {/* Not logged in warning */}
+        {isLocalCart && !isAuthenticated && (
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+            <div className="flex gap-2">
+              <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-blue-900 font-medium text-sm mb-2">
+                  Sign in to proceed with checkout
+                </p>
+                <p className="text-blue-700 text-xs mb-3">
+                  Your items are saved in your browser. Sign in to your account to securely complete your purchase.
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Checkout button - different based on auth status */}
+        {isLocalCart && !isAuthenticated ? (
+          <Button
+            onClick={() => navigate('/login')}
+            className="w-full bg-emerald-700 hover:bg-emerald-800 text-white h-14 text-lg rounded-sm shadow-lg hover:shadow-xl transition-all duration-300"
+          >
+            Sign In to Checkout
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        ) : (
+          <Button
+            onClick={handleCheckout}
+            disabled={cartTotals.itemCount === 0}
+            className="w-full bg-emerald-700 hover:bg-emerald-800 text-white h-14 text-lg rounded-sm shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Proceed to Checkout
+            <ArrowRight className="w-5 h-5 ml-2" />
+          </Button>
+        )}
 
         {/* Security message */}
         <div className="flex items-center justify-center gap-2 text-stone-500 text-sm pt-2">
           <Lock className="w-4 h-4" />
-          <span>Secure checkout</span>
+          <span>Secure checkout powered by Razorpay</span>
         </div>
 
         {/* Additional info */}
@@ -160,9 +241,17 @@ const CartSummary = ({ cartTotals }) => {
             <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full mt-1.5"></div>
             <span>100% satisfaction guarantee</span>
           </div>
+          <div className="flex items-start gap-2">
+            <div className="w-1.5 h-1.5 bg-emerald-600 rounded-full mt-1.5"></div>
+            <span>All payment methods accepted</span>
+          </div>
         </div>
       </div>
     </div>
+
+      {/* Toast Container */}
+      <ToastContainer toasts={toasts} onClose={dismiss} />
+    </>
   );
 };
 

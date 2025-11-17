@@ -12,14 +12,18 @@ import { useCart } from '@/hooks/useCart';
 const Product = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
-  const { product, loading, error } = useProduct(productId);
+  const { product, loading, error, refetch } = useProduct(productId);
   const [quantity, setQuantity] = useState(1);
   const { addItem } = useCart();
 
+  console.log('🔍 Product Page - ProductID from URL:', productId);
+  console.log('🔍 Product Page - Product data:', product);
+  console.log('🔍 Product Page - Loading:', loading);
+  console.log('🔍 Product Page - Error:', error);
+
   const handleAddToCart = () => {
-    // TODO: Implement add to cart
     console.log('Add to cart:', product.id, 'Quantity:', quantity);
-    addItem(product.id, quantity);
+    addItem(product.id, quantity, product);
   };
 
   const handleToggleWishlist = () => {
@@ -108,10 +112,15 @@ const Product = () => {
               <div className="mb-6">
                 <div className="flex items-baseline gap-2">
                   <span className="text-4xl font-semibold text-stone-900">
-                    ${product.price.toFixed(2)}
+                    {product.currency_symbol || '$'}{product.price.toFixed(2)}
                   </span>
                   <span className="text-lg text-stone-500">/ 15ml</span>
                 </div>
+                {product.currency_type && (
+                  <p className="text-sm text-stone-500 mt-2">
+                    💱 Currency: {product.currency_type}
+                  </p>
+                )}
               </div>
 
               {/* Description */}

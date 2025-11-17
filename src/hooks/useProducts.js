@@ -74,17 +74,23 @@ export const useProduct = (productId) => {
 
   useEffect(() => {
     const fetchProduct = async () => {
+      console.log('🟢 [useProduct] useEffect triggered with productId:', productId);
+      
       if (!productId) {
+        console.log('🟡 [useProduct] No productId provided, skipping fetch');
         setLoading(false);
         return;
       }
 
       try {
+        console.log('🔵 [useProduct] Starting fetch for product:', productId);
         setLoading(true);
         setError(null);
         const data = await productsAPI.getProductById(productId);
+        console.log('🟢 [useProduct] Product fetched successfully:', data);
         setProduct(data);
       } catch (err) {
+        console.error('🔴 [useProduct] Error fetching product:', err);
         setError(err.message || 'Failed to fetch product');
         setProduct(null);
       } finally {

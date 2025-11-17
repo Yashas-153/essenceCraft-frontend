@@ -1,7 +1,18 @@
 import React from 'react';
-import CartItem from './CartItems';
+import CartItem from './CartItem';
 
-const CartItems = ({ items }) => {
+const CartItems = ({ items, onItemUpdate }) => {
+
+  console.log('CartItems received items:', items);
+  // Safety check for items
+  if (!items || !Array.isArray(items) || items.length === 0) {
+    return (
+      <div className="bg-white rounded-sm shadow-md border border-stone-100 p-12 text-center">
+        <p className="text-stone-600">No items in cart</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-sm shadow-md border border-stone-100">
       {/* Header */}
@@ -12,7 +23,11 @@ const CartItems = ({ items }) => {
       {/* Items list */}
       <div className="divide-y divide-stone-100">
         {items.map((item) => (
-          <CartItem key={item.id} item={item} />
+          <CartItem 
+            key={item.id} 
+            item={item} 
+            onItemUpdate={onItemUpdate}
+          />
         ))}
       </div>
     </div>

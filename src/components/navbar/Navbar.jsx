@@ -86,7 +86,7 @@ const Navbar = () => {
           <div className="flex items-center space-x-4">
             {/* Cart Icon */}
             <button
-              onClick={() => navigate('/cart')}
+              onClick={() => navigate(isAuthenticated ? '/cart?loggedin=true' : '/cart')}
               className="relative p-2 text-stone-700 hover:text-emerald-700 transition-colors"
               aria-label="Shopping cart"
             >
