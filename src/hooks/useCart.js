@@ -44,7 +44,8 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem('token');
+      const authTokens = localStorage.getItem('auth_tokens');
+      const token = authTokens ? JSON.parse(authTokens).access_token : null;
 
       if (token) {
         // User is logged in - fetch from backend
@@ -151,7 +152,8 @@ export const CartProvider = ({ children }) => {
       setLoading(true);
       setError(null);
 
-      const token = localStorage.getItem('token');
+      const authTokens = localStorage.getItem('auth_tokens');
+      const token = authTokens ? JSON.parse(authTokens).access_token : null;
 
       if (token) {
         // Fetch from backend
@@ -193,7 +195,8 @@ export const CartProvider = ({ children }) => {
   const addItem = useCallback(async (productId, quantity = 1, productData = null) => {
     try {
       setError(null);
-      const token = localStorage.getItem('token');
+      const authTokens = localStorage.getItem('auth_tokens');
+      const token = authTokens ? JSON.parse(authTokens).access_token : null;
 
       if (token) {
         // Add to backend
@@ -234,7 +237,8 @@ export const CartProvider = ({ children }) => {
   const updateItem = useCallback(async (itemId, quantity) => {
     try {
       setError(null);
-      const token = localStorage.getItem('token');
+      const authTokens = localStorage.getItem('auth_tokens');
+      const token = authTokens ? JSON.parse(authTokens).access_token : null;
 
       if (token) {
         // Update in backend
@@ -267,7 +271,8 @@ export const CartProvider = ({ children }) => {
   const removeItem = useCallback(async (itemId) => {
     try {
       setError(null);
-      const token = localStorage.getItem('token');
+      const authTokens = localStorage.getItem('auth_tokens');
+      const token = authTokens ? JSON.parse(authTokens).access_token : null;
 
       if (token) {
         // Remove from backend
@@ -297,7 +302,8 @@ export const CartProvider = ({ children }) => {
   const clearCart = useCallback(async () => {
     try {
       setError(null);
-      const token = localStorage.getItem('token');
+      const authTokens = localStorage.getItem('auth_tokens');
+      const token = authTokens ? JSON.parse(authTokens).access_token : null;
 
       if (token) {
         // Clear backend cart

@@ -35,7 +35,8 @@ const useRazorpayPayment = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
    * Get access token from localStorage
    */
   const getAccessToken = useCallback(() => {
-    const token = localStorage.getItem('accessToken');
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
     if (!token) {
       throw new Error('No access token found. Please login first.');
     }
@@ -45,9 +46,17 @@ const useRazorpayPayment = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
   /**
    * Create an order on the backend
    */
-  const createOrder = useCallback(async (shippingAddressId) => {
+  const createOrder = useCallback(async (shippingAddressId, cartItems = []) => {
     try {
       const token = getAccessToken();
+
+      // Transform cart items to the format expected by backend
+      const orderItems = cartItems.map(item => ({
+        product_id: item.product_id,
+        variant_id: item.variant_id || null,
+        quantity: item.quantity,
+        price: item.price
+      }));
 
       const response = await fetch(`${apiBaseUrl}/orders`, {
         method: 'POST',
@@ -57,7 +66,7 @@ const useRazorpayPayment = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
         },
         body: JSON.stringify({
           shipping_address_id: shippingAddressId,
-          items: [] // Items taken from cart
+          items: orderItems
         })
       });
 
@@ -140,6 +149,67 @@ const useRazorpayPayment = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
   }, [apiBaseUrl, getAccessToken]);
 
   /**
+   * Record payment failure
+   */
+  const recordPaymentFailure = useCallback(async (orderId, reason = null) => {
+    try {
+      const token = getAccessToken();
+
+      const response = await fetch(`${apiBaseUrl}/payments/failure`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          order_id: orderId,
+          reason: reason || 'Payment cancelled by user'
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Failed to record payment failure:', errorData);
+      }
+
+      return await response.json();
+    } catch (err) {
+      console.error('Error recording payment failure:', err);
+      // Don't throw error here - this is a background operation
+    }
+  }, [apiBaseUrl, getAccessToken]);
+
+  /**
+   * Retry payment for an existing order
+   */
+  const retryPayment = useCallback(async (orderId, paymentMethod = 'upi') => {
+    try {
+      const token = getAccessToken();
+
+      const response = await fetch(`${apiBaseUrl}/payments/retry/${orderId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          payment_method: paymentMethod
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || 'Failed to retry payment');
+      }
+
+      return await response.json();
+    } catch (err) {
+      console.error('Error retrying payment:', err);
+      throw err;
+    }
+  }, [apiBaseUrl, getAccessToken]);
+
+  /**
    * Open Razorpay checkout modal
    */
   const openRazorpayCheckout = useCallback((paymentData, userDetails, order, onSuccess, onFailure) => {
@@ -173,20 +243,23 @@ const useRazorpayPayment = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
       // Payment success handler
       handler: async function (response) {
         try {
-          console.log('Payment successful:', response);
+          console.log('✅ Payment successful:', response);
           const verificationResult = await verifyPayment(response, order.id);
           onSuccess && onSuccess(verificationResult, order);
         } catch (error) {
-          console.error('Verification error:', error);
-          onFailure && onFailure(error);
+          console.error('❌ Verification error:', error);
+          onFailure && onFailure(error, order);
         }
       },
 
       // Modal options
       modal: {
-        ondismiss: function () {
-          console.log('Payment cancelled by user');
-          onFailure && onFailure(new Error('Payment cancelled'));
+        ondismiss: async function () {
+          console.log('❌ Payment cancelled by user');
+          // Record the cancellation in backend
+          await recordPaymentFailure(order.id, 'Payment cancelled by user');
+          // Pass order info to failure handler for retry option
+          onFailure && onFailure(new Error('Payment cancelled'), order);
         },
         escape: true,
         backdropclose: false
@@ -205,17 +278,24 @@ const useRazorpayPayment = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     razorpay.open();
 
     // Handle payment failures
-    razorpay.on('payment.failed', function (response) {
-      console.error('Payment failed:', response.error);
-      onFailure && onFailure(response.error);
+    razorpay.on('payment.failed', async function (response) {
+      console.error('❌ Payment failed:', response.error);
+      // Record the failure in backend
+      await recordPaymentFailure(
+        order.id, 
+        response.error?.description || 'Payment failed'
+      );
+      // Pass order info to failure handler for retry option
+      onFailure && onFailure(response.error, order);
     });
-  }, [verifyPayment]);
+  }, [verifyPayment, recordPaymentFailure]);
 
   /**
    * Main checkout function - handles the entire payment flow
    */
   const initiateCheckout = useCallback(async ({
     shippingAddressId,
+    cartItems,
     userDetails,
     paymentMethod = 'upi',
     onSuccess,
@@ -233,7 +313,7 @@ const useRazorpayPayment = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
 
       // Step 2: Create order on backend
       console.log('Creating order...');
-      const order = await createOrder(shippingAddressId);
+      const order = await createOrder(shippingAddressId, cartItems);
       console.log('Order created:', order);
 
       // Step 3: Create Razorpay payment order
@@ -290,6 +370,8 @@ const useRazorpayPayment = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     createOrder,
     createPaymentOrder,
     verifyPayment,
+    recordPaymentFailure,
+    retryPayment,
     reset,
 
     // Utilities

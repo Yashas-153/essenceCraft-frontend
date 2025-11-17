@@ -1,11 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { addressAPI } from '@/services/api';
 
 /**
  * Custom hook for managing user addresses
- * @param {string} apiBaseUrl - Base URL for the API (default: http://localhost:8000/api/v1)
  * @returns {Object} Address methods and state
  */
-const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
+const useAddress = () => {
   const [addresses, setAddresses] = useState([]);
   const [shippingAddresses, setShippingAddresses] = useState([]);
   const [billingAddresses, setBillingAddresses] = useState([]);
@@ -21,9 +21,9 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
    */
   const getAccessToken = useCallback(() => {
     console.log('🟡 [getAccessToken] Checking for token in localStorage');
-    const token = localStorage.getItem('token');
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
     console.log('🟡 [getAccessToken] Token found:', !!token);
-    console.log('🟡 [getAccessToken] Token value (first 20 chars):', token?.substring(0, 20) + '...');
     if (!token) {
       console.error('🟡 [getAccessToken] No token found!');
       throw new Error('No access token found. Please login first.');
@@ -39,22 +39,7 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     setError(null);
 
     try {
-      const token = getAccessToken();
-      const url = addressType 
-        ? `${apiBaseUrl}/users/me/addresses?address_type=${addressType}`
-        : `${apiBaseUrl}/users/me/addresses`;
-
-      const response = await fetch(url, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch addresses');
-      }
-
-      const data = await response.json();
+      const data = await addressAPI.getAddresses(addressType);
       setAddresses(data);
 
       // Separate by type
@@ -85,33 +70,33 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     } finally {
       setIsLoading(false);
     }
-  }, [apiBaseUrl, getAccessToken, selectedAddressId]);
+  }, [selectedAddressId]);
 
   /**
    * Fetch address statistics
    */
   const fetchStatistics = useCallback(async () => {
     try {
-      const token = getAccessToken();
-      const response = await fetch(`${apiBaseUrl}/addresses/statistics/count`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch statistics');
-      }
-
-      const data = await response.json();
-      setStatistics(data);
-      return data;
+      // For now, calculate statistics from addresses array
+      // You can implement a dedicated API endpoint later
+      const totalAddresses = addresses.length;
+      const shippingCount = addresses.filter(addr => addr.address_type === 'shipping').length;
+      const billingCount = addresses.filter(addr => addr.address_type === 'billing').length;
+      
+      const stats = {
+        total_addresses: totalAddresses,
+        shipping_addresses: shippingCount,
+        billing_addresses: billingCount
+      };
+      
+      setStatistics(stats);
+      return stats;
 
     } catch (err) {
       console.error('Error fetching statistics:', err);
       throw err;
     }
-  }, [apiBaseUrl, getAccessToken]);
+  }, [addresses]);
 
   /**
    * Fetch single address by ID
@@ -121,18 +106,8 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     setError(null);
 
     try {
-      const token = getAccessToken();
-      const response = await fetch(`${apiBaseUrl}/users/me/addresses/${addressId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Address not found');
-      }
-
-      return await response.json();
+      const address = await addressAPI.getAddressById(addressId);
+      return address;
 
     } catch (err) {
       console.error('Error fetching address:', err);
@@ -141,34 +116,24 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     } finally {
       setIsLoading(false);
     }
-  }, [apiBaseUrl, getAccessToken]);
+  }, []);
 
   /**
    * Fetch default address by type
    */
   const fetchDefaultAddress = useCallback(async (addressType) => {
     try {
-      const token = getAccessToken();
-      const response = await fetch(`${apiBaseUrl}/users/me/addresses/default/${addressType}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          return null; // No default address set
-        }
-        throw new Error(`Failed to fetch default ${addressType} address`);
-      }
-
-      return await response.json();
+      const defaultAddress = await addressAPI.getDefaultAddress(addressType);
+      return defaultAddress;
 
     } catch (err) {
+      if (err.message.includes('404')) {
+        return null; // No default address set
+      }
       console.error(`Error fetching default ${addressType} address:`, err);
       throw err;
     }
-  }, [apiBaseUrl, getAccessToken]);
+  }, []);
 
   /**
    * Create new address
@@ -180,33 +145,7 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     setError(null);
 
     try {
-      console.log('🔵 [useAddress.createAddress] Getting access token...');
-      const token = getAccessToken();
-      console.log('🔵 [useAddress.createAddress] Token obtained, length:', token?.length);
-      
-      const url = `${apiBaseUrl}/users/me/addresses`;
-      console.log('🔵 [useAddress.createAddress] Making POST request to:', url);
-      console.log('🔵 [useAddress.createAddress] Request body:', JSON.stringify(addressData));
-      
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(addressData)
-      });
-
-      console.log('🔵 [useAddress.createAddress] Response status:', response.status);
-      console.log('🔵 [useAddress.createAddress] Response ok:', response.ok);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.error('🔵 [useAddress.createAddress] Error response:', errorData);
-        throw new Error(errorData.detail || errorData.message || 'Failed to create address');
-      }
-
-      const newAddress = await response.json();
+      const newAddress = await addressAPI.createAddress(addressData);
       console.log('🔵 [useAddress.createAddress] Address created successfully:', newAddress);
       
       // Refresh addresses list after successful creation
@@ -226,7 +165,7 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
       console.log('🔵 [useAddress.createAddress] Finally block - Setting isLoading to false');
       setIsLoading(false);
     }
-  }, [apiBaseUrl, getAccessToken, fetchAddresses]);
+  }, [fetchAddresses]);
 
   /**
    * Update existing address
@@ -236,22 +175,7 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     setError(null);
 
     try {
-      const token = getAccessToken();
-      const response = await fetch(`${apiBaseUrl}/users/me/addresses/${addressId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify(updateData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to update address');
-      }
-
-      const updatedAddress = await response.json();
+      const updatedAddress = await addressAPI.updateAddress(addressId, updateData);
       
       // Refresh addresses list after successful update
       setTimeout(() => {
@@ -267,7 +191,7 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     } finally {
       setIsLoading(false);
     }
-  }, [apiBaseUrl, getAccessToken, fetchAddresses]);
+  }, [fetchAddresses]);
 
   /**
    * Delete address
@@ -277,17 +201,7 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     setError(null);
 
     try {
-      const token = getAccessToken();
-      const response = await fetch(`${apiBaseUrl}/users/me/addresses/${addressId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to delete address');
-      }
+      await addressAPI.deleteAddress(addressId);
 
       // If deleted address was selected, clear selection
       if (selectedAddressId === addressId) {
@@ -308,7 +222,7 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     } finally {
       setIsLoading(false);
     }
-  }, [apiBaseUrl, getAccessToken, selectedAddressId, fetchAddresses]);
+  }, [selectedAddressId, fetchAddresses]);
 
   /**
    * Set address as default
@@ -318,19 +232,7 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     setError(null);
 
     try {
-      const token = getAccessToken();
-      const response = await fetch(`${apiBaseUrl}/users/me/addresses/${addressId}/set-default`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to set default address');
-      }
-
-      const updatedAddress = await response.json();
+      const updatedAddress = await addressAPI.setAsDefault(addressId);
       
       // Refresh addresses list after successful update
       setTimeout(() => {
@@ -346,7 +248,7 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
     } finally {
       setIsLoading(false);
     }
-  }, [apiBaseUrl, getAccessToken, fetchAddresses]);
+  }, [fetchAddresses]);
 
   /**
    * Validate address data before submission
@@ -433,7 +335,8 @@ const useAddress = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
   useEffect(() => {
     const initializeAddresses = async () => {
       try {
-        const token = localStorage.getItem('accessToken');
+        const authTokens = localStorage.getItem('auth_tokens');
+        const token = authTokens ? JSON.parse(authTokens).access_token : null;
         if (token) {
           await fetchAddresses();
           await fetchStatistics();

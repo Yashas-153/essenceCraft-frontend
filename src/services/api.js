@@ -83,10 +83,17 @@ export const cartAPI = {
    * @returns {Promise} Cart object with items
    */
   getCart: async () => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+
     return fetchAPI('/cart', {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
   },
@@ -97,11 +104,18 @@ export const cartAPI = {
    * @param {number} quantity - Quantity to add
    */
   addItem: async (productId, quantity = 1) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+
     return fetchAPI('/cart/items', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',   // ← REQUIRED
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
         product_id: productId,
@@ -117,11 +131,18 @@ export const cartAPI = {
    * @param {number} quantity - New quantity
    */
   updateItem: async (itemId, quantity) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+
     return fetchAPI(`/cart/items/${itemId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
       },
       body: JSON.stringify({
         quantity: quantity,
@@ -134,11 +155,18 @@ export const cartAPI = {
    * @param {number} itemId - Cart item ID
    */
   removeItem: async (itemId) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+
     return fetchAPI(`/cart/items/${itemId}`, {
       method: 'DELETE',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
   },
@@ -147,10 +175,17 @@ export const cartAPI = {
    * Clear entire cart
    */
   clearCart: async () => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+
     return fetchAPI('/cart', {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        'Authorization': `Bearer ${token}`,
       },
     });
   },
@@ -589,6 +624,152 @@ export const adminAPI = {
     }
 
     return response.json();
+  },
+};
+
+// Address API endpoints
+export const addressAPI = {
+  /**
+   * Get all user addresses
+   * @param {string} addressType - Optional address type filter (shipping/billing)
+   */
+  getAddresses: async (addressType = null) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    const endpoint = addressType 
+      ? `/users/me/addresses?address_type=${addressType}`
+      : '/users/me/addresses';
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI(endpoint, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Get single address by ID
+   * @param {number} addressId - Address ID
+   */
+  getAddressById: async (addressId) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI(`/users/me/addresses/${addressId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Create new address
+   * @param {Object} addressData - Address data
+   */
+  createAddress: async (addressData) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI('/users/me/addresses', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(addressData),
+    });
+  },
+
+  /**
+   * Update existing address
+   * @param {number} addressId - Address ID
+   * @param {Object} updateData - Updated address data
+   */
+  updateAddress: async (addressId, updateData) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI(`/users/me/addresses/${addressId}`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(updateData),
+    });
+  },
+
+  /**
+   * Delete address
+   * @param {number} addressId - Address ID
+   */
+  deleteAddress: async (addressId) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI(`/users/me/addresses/${addressId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Set address as default
+   * @param {number} addressId - Address ID
+   */
+  setAsDefault: async (addressId) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI(`/users/me/addresses/${addressId}/set-default`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Get default address by type
+   * @param {string} addressType - Address type (shipping/billing)
+   */
+  getDefaultAddress: async (addressType) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI(`/users/me/addresses/default/${addressType}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
   },
 };
 

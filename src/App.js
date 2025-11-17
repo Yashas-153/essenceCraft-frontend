@@ -10,7 +10,6 @@ import OrderSuccess from './pages/OrderSuccess';
 import Layout from '@/components/navbar/Layout';  
 import { AuthProvider } from '@/hooks/useAuth';
 import { AdminProvider } from '@/hooks/useAdminAuth';
-import OrderSuccessPage from '@/pages/OrderSuccess';
 
 // Admin Components
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
@@ -42,7 +41,6 @@ function App() {
               <Route path="/order-success/:orderId" element={<Layout><OrderSuccess /></Layout>} />
               <Route path="/login" element={<Layout><Login /></Layout>} />
               <Route path="/signup" element={<Layout><Signup /></Layout>} />
-              <Route path="/orders/:orderId/success" element={<Layout><OrderSuccessPage /></Layout>} />
               
               {/* Order Tracking Routes */}
               <Route path="/track" element={<Layout><OrderStatusPage /></Layout>} />

@@ -160,17 +160,17 @@ const PaymentMethod = ({
           Back
         </Button>
         <Button
-          onClick={onContinue || onPlaceOrder}
+          onClick={onPlaceOrder || onContinue}
           disabled={isProcessing || !selectedMethod}
           className="flex-1 bg-emerald-700 hover:bg-emerald-800 text-white py-3 text-lg disabled:opacity-50"
         >
           {isProcessing ? (
             <>
               <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-              Processing...
+              Processing Payment...
             </>
           ) : (
-            onContinue ? 'Continue to Shipping' : 'Place Order'
+            'Pay Now'
           )}
         </Button>
       </div>

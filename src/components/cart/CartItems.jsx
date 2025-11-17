@@ -14,10 +14,12 @@ const CartItems = ({ items, onItemUpdate }) => {
   }
 
   return (
-    <div className="bg-white rounded-sm shadow-md border border-stone-100">
+    <div className="bg-white rounded-lg border border-stone-200">
       {/* Header */}
       <div className="border-b border-stone-200 px-6 py-4">
-        <h2 className="text-xl font-semibold text-stone-900">Cart Items</h2>
+        <h2 className="text-lg font-semibold text-stone-900">
+          My Cart ({items.length} Item{items.length !== 1 ? 's' : ''})
+        </h2>
       </div>
 
       {/* Items list */}

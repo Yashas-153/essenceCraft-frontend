@@ -254,8 +254,9 @@ const AddAddressForm = ({ onClose, onSuccess }) => {
       console.log('📤 Attempting to submit form data:', formData);
       
       // Check if token exists
-      const token = localStorage.getItem('accessToken');
-      console.log('🔐 Token check - accessToken exists:', !!token);
+      const authTokens = localStorage.getItem('auth_tokens');
+      const token = authTokens ? JSON.parse(authTokens).access_token : null;
+      console.log('🔐 Token check - access_token exists:', !!token);
       if (!token) {
         console.error('❌ No token found in localStorage');
         throw new Error('Authentication token not found. Please login again.');

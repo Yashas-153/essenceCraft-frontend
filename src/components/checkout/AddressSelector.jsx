@@ -8,7 +8,8 @@ const AddressSelector = ({
   selectedAddressId = null,
   onSelectAddress = () => {},
   isLoading = false,
-  onContinue = () => {}
+  onContinue = () => {},
+  onAddressChange = () => {}
 }) => {
   const [showAddressForm, setShowAddressForm] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState(null);
@@ -16,6 +17,8 @@ const AddressSelector = ({
   const handleAddressCreated = () => {
     setShowAddressForm(false);
     setEditingAddressId(null);
+    // Notify parent component to refresh addresses
+    onAddressChange();
   };
 
   return (

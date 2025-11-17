@@ -104,20 +104,22 @@ const AddressForm = ({
         });
       } else {
         // Create new address
-        await address.createAddress(formData);
+        console.log('🟢 [AddressForm] About to create address:', formData);
+        const result = await address.createAddress(formData);
+        console.log('🟢 [AddressForm] Address created successfully:', result);
         toast({
-          title: 'Success',
-          description: 'Address added successfully.',
+          title: 'Success! 🎉',
+          description: 'Your new address has been added successfully.',
           variant: 'success'
         });
       }
 
       onSuccess();
     } catch (error) {
-      console.error('Error saving address:', error);
+      console.error('🔴 [AddressForm] Error saving address:', error);
       toast({
-        title: 'Error',
-        description: error.message || 'Failed to save address.',
+        title: 'Failed to Save Address ❌',
+        description: error.message || 'Something went wrong. Please try again.',
         variant: 'destructive'
       });
     } finally {
