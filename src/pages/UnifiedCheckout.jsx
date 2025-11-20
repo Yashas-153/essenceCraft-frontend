@@ -80,7 +80,7 @@ const UnifiedCheckout = () => {
       await fetchCart();
 
       // Fetch addresses
-      const addressResponse = await fetch('http://localhost:8000/api/v1/users/me/addresses', {
+      const addressResponse = await fetch(`${API_BASE_URL}/users/me/addresses`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -92,7 +92,7 @@ const UnifiedCheckout = () => {
       }
 
       // Fetch user details
-      const userResponse = await fetch('http://localhost:8000/api/v1/users/me', {
+      const userResponse = await fetch(`${API_BASE_URL}/users/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -265,7 +265,7 @@ const UnifiedCheckout = () => {
           handler: async function (response) {
             try {
               const token = JSON.parse(localStorage.getItem('auth_tokens')).access_token;
-              const verifyResponse = await fetch('http://localhost:8000/api/v1/payments/verify', {
+              const verifyResponse = await fetch(`${API_BASE_URL}/payments/verify`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

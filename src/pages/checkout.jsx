@@ -13,6 +13,8 @@ import { ToastContainer } from '@/components/ui/toast';
 import { Button } from '@/components/ui/button';
 import { Loader2, ArrowLeft, ShoppingBag } from 'lucide-react';
 
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1';
+
 const CheckoutPage = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
@@ -81,7 +83,7 @@ const CheckoutPage = () => {
       }
 
       // Fetch user details
-      const userResponse = await fetch('http://localhost:8000/api/v1/users/me', {
+      const userResponse = await fetch(`${API_BASE_URL}/users/me`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
@@ -289,7 +291,7 @@ const CheckoutPage = () => {
               
               // Verify payment
               const token = JSON.parse(localStorage.getItem('auth_tokens')).access_token;
-              const verifyResponse = await fetch('http://localhost:8000/api/v1/payments/verify', {
+              const verifyResponse = await fetch(`${API_BASE_URL}/payments/verify`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

@@ -4,7 +4,8 @@ import { ArrowRight, Star, ShoppingCart, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { productsAPI } from '../../services/api';
 
-const BASE_URL = process.env.REACT_API_APP_URL || 'http://localhost:8000';
+const STATIC_API_URL = process.env.REACT_APP_STATIC_URL || 'http://localhost:8000';
+
 const ShopBestsellers = () => {
   const navigate = useNavigate();
   const [bestsellers, setBestsellers] = useState([]);

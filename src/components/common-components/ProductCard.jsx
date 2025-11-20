@@ -3,7 +3,7 @@ import { Button } from '../ui/button';
 import { ShoppingCart, Heart, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const STATIC_API_URL = 'http://localhost:8000';
+const STATIC_API_URL = process.env.REACT_APP_STATIC_URL || 'http://localhost:80000'
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();

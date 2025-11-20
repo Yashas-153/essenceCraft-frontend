@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-const STATIC_API_URL = 'http://localhost:8000';
+
+const STATIC_API_URL = process.env.REACT_APP_STATIC_URL || 'http://localhost:8000';
 
 const ProductImageGallery = ({ images, productName }) => {
   const [currentImage, setCurrentImage] = useState(0);

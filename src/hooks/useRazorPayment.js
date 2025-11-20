@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
  * @param {string} apiBaseUrl - Base URL for the API (default: http://localhost:8000/api/v1)
  * @returns {Object} Payment methods and state
  */
-const useRazorpayPayment = (apiBaseUrl = 'http://localhost:8000/api/v1') => {
+const useRazorpayPayment = (apiBaseUrl = process.env.REACT_APP_API_URL || 'http://localhost:8000/api/v1') => {
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState(null);

@@ -3,7 +3,9 @@ import { Button } from '../ui/button';
 import { ArrowRight, Droplet, Leaf, Sparkles } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { productsAPI } from '../../services/api';
-const BASE_URL = process.env.REACT_API_APP_URL || 'http://localhost:8000';
+
+const STATIC_API_URL = process.env.REACT_API_STATIC_URL || 'http://localhost:8000';
+
 const ProductShowcase = () => {
   const navigate = useNavigate();
   const [featuredProduct, setFeaturedProduct] = useState(null);
@@ -72,7 +74,7 @@ const ProductShowcase = () => {
             <div className="aspect-square bg-gradient-to-br from-amber-50 via-emerald-50 to-stone-100 rounded-sm shadow-2xl overflow-hidden">
               {featuredProduct.image_url ? (
                 <img 
-                  src={featuredProduct.image_url} 
+                src={`${STATIC_API_URL}${featuredProduct.image_url}`} 
                   alt={featuredProduct.name}
                   className="w-full h-full object-cover"
                 />
