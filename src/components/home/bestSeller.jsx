@@ -92,7 +92,7 @@ const ShopBestsellers = () => {
                   <div className="relative aspect-square bg-gradient-to-br from-stone-100 to-emerald-50 overflow-hidden">
                     {product.image_url ? (
                       <img 
-                        src={`${BASE_URL}${product.image_url}`} 
+                        src={`${STATIC_API_URL}${product.image_url}`} 
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         onError={(e) => {
