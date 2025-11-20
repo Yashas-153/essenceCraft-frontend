@@ -1,6 +1,6 @@
 // Base API configuration
-const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8000/api/v1';
-
+const BASE_URL = process.env.REACT_API_APP_URL || 'http://localhost:8000'
+const API_BASE_URL = `${BASE_URL}/api/v1`;
 // Generic fetch wrapper with error handling
 const fetchAPI = async (endpoint, options = {}) => {
   try {

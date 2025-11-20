@@ -1,53 +1,38 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/button';
-import { ArrowRight, Star, ShoppingCart } from 'lucide-react';
+import { ArrowRight, Star, ShoppingCart, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { productsAPI } from '../../services/api';
 
+const BASE_URL = process.env.REACT_API_APP_URL || 'http://localhost:8000';
 const ShopBestsellers = () => {
   const navigate = useNavigate();
+  const [bestsellers, setBestsellers] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const bestsellers = [
-    {
-      id: 1,
-      name: 'Lavender Essential Oil',
-      origin: 'French Provence',
-      price: '24.99',
-      rating: 4.9,
-      reviews: 248,
-      image: null, // Replace with actual image URL
-      benefits: ['Calm', 'Sleep', 'Relaxation']
-    },
-    {
-      id: 2,
-      name: 'Peppermint Essential Oil',
-      origin: 'Oregon Grown',
-      price: '19.99',
-      rating: 4.8,
-      reviews: 192,
-      image: null,
-      benefits: ['Focus', 'Energy', 'Clarity']
-    },
-    {
-      id: 3,
-      name: 'Eucalyptus Essential Oil',
-      origin: 'Australian Blue Gum',
-      price: '21.99',
-      rating: 4.9,
-      reviews: 156,
-      image: null,
-      benefits: ['Breathe', 'Refresh', 'Invigorate']
-    },
-    {
-      id: 4,
-      name: 'Tea Tree Essential Oil',
-      origin: 'New Zealand',
-      price: '22.99',
-      rating: 4.7,
-      reviews: 134,
-      image: null,
-      benefits: ['Purify', 'Cleanse', 'Protect']
-    }
-  ];
+  useEffect(() => {
+    const fetchBestsellers = async () => {
+      try {
+        setLoading(true);
+        // Fetch products from API
+        const response = await productsAPI.getAllProducts({ limit: 12 });
+        
+        // Shuffle and pick 4 random products for bestsellers
+        const shuffled = [...response].sort(() => 0.5 - Math.random());
+        const selected = shuffled.slice(0, 4);
+        
+        setBestsellers(selected);
+      } catch (error) {
+        console.error('Error fetching bestsellers:', error);
+        // Keep empty array on error
+        setBestsellers([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBestsellers();
+  }, []);
 
   return (
     <section className="py-24 px-6 bg-white" id="shop-bestsellers">
@@ -71,63 +56,119 @@ const ShopBestsellers = () => {
 
         {/* Products grid */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
-          {bestsellers.map((product) => (
-            <div 
-              key={product.id} 
-              className="bg-stone-50 rounded-sm border border-stone-200 overflow-hidden group hover:shadow-xl transition-all duration-300 cursor-pointer"
-              onClick={() => navigate(`/products/${product.id}`)}
-            >
-              {/* Product image */}
-              <div className="relative aspect-square bg-gradient-to-br from-stone-100 to-emerald-50">
-                <div className="w-full h-full flex items-center justify-center p-8">
-                  <div className="w-20 h-40 bg-amber-800 bg-opacity-70 rounded-sm shadow-lg"></div>
+          {loading ? (
+            // Loading skeleton
+            [...Array(4)].map((_, index) => (
+              <div key={index} className="bg-stone-50 rounded-sm border border-stone-200 overflow-hidden animate-pulse">
+                <div className="aspect-square bg-stone-200" />
+                <div className="p-6 space-y-3">
+                  <div className="h-4 bg-stone-200 rounded w-3/4" />
+                  <div className="h-3 bg-stone-200 rounded w-1/2" />
+                  <div className="h-3 bg-stone-200 rounded w-1/4" />
+                  <div className="h-8 bg-stone-200 rounded w-full" />
                 </div>
-                
-                {/* Overlay on hover */}
-                <div className="absolute inset-0 bg-emerald-900 bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300"></div>
               </div>
+            ))
+          ) : bestsellers.length > 0 ? (
+            bestsellers.map((product) => {
+              // Format price with currency symbol
+              const formatPrice = (price) => {
+                return new Intl.NumberFormat('en-IN', {
+                  style: 'currency',
+                  currency: 'INR',
+                  minimumFractionDigits: 0,
+                  maximumFractionDigits: 0
+                }).format(price);
+              };
 
-              {/* Product details */}
-              <div className="p-6">
-                <h3 className="font-semibold text-stone-900 text-lg mb-1 leading-tight">
-                  {product.name}
-                </h3>
-                <p className="text-sm text-stone-500 mb-3">{product.origin}</p>
-
-                {/* Rating */}
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex items-center">
-                    <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                    <span className="text-sm font-medium text-stone-700 ml-1">{product.rating}</span>
-                  </div>
-                  <span className="text-xs text-stone-400">({product.reviews})</span>
-                </div>
-
-                {/* Benefits */}
-                <div className="flex flex-wrap gap-1.5 mb-4">
-                  {product.benefits.map((benefit, index) => (
-                    <span 
-                      key={index}
-                      className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded-sm"
+              return (
+                <div 
+                  key={product.id} 
+                  className="bg-stone-50 rounded-sm border border-stone-200 overflow-hidden group hover:shadow-xl transition-all duration-300 cursor-pointer"
+                  onClick={() => navigate(`/products/${product.id}`)}
+                >
+                  {/* Product image */}
+                  <div className="relative aspect-square bg-gradient-to-br from-stone-100 to-emerald-50 overflow-hidden">
+                    {product.image_url ? (
+                      <img 
+                        src={`${BASE_URL}${product.image_url}`} 
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextElementSibling.style.display = 'flex';
+                        }}
+                      />
+                    ) : null}
+                    <div 
+                      className={`w-full h-full ${product.image_url ? 'hidden' : 'flex'} items-center justify-center p-8`}
+                      style={{ display: product.image_url ? 'none' : 'flex' }}
                     >
-                      {benefit}
-                    </span>
-                  ))}
-                </div>
-
-                {/* Price */}
-                <div className="flex items-center justify-between pt-4 border-t border-stone-200">
-                  <div>
-                    <span className="text-2xl font-semibold text-stone-900">${product.price}</span>
-                    <span className="text-sm text-stone-500 ml-1">/ 15ml</span>
+                      <div className="w-20 h-40 bg-amber-800 bg-opacity-70 rounded-sm shadow-lg"></div>
+                    </div>
+                    
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-emerald-900 bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300"></div>
+                    
+                    {/* Stock badge */}
+                    {product.stock_quantity <= 5 && product.stock_quantity > 0 && (
+                      <div className="absolute top-3 right-3 bg-red-500 text-white text-xs px-2 py-1 rounded-sm">
+                        Only {product.stock_quantity} left
+                      </div>
+                    )}
+                    {product.stock_quantity === 0 && (
+                      <div className="absolute top-3 right-3 bg-stone-700 text-white text-xs px-2 py-1 rounded-sm">
+                        Out of Stock
+                      </div>
+                    )}
                   </div>
-                  <button className="p-2 bg-emerald-700 text-white rounded-sm hover:bg-emerald-800 transition-colors">
-                    <ShoppingCart className="w-5 h-5" />
-                  </button>
+
+                  {/* Product details */}
+                  <div className="p-6">
+                    <h3 className="font-semibold text-stone-900 text-lg mb-1 leading-tight line-clamp-2 min-h-[3.5rem]">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm text-stone-500 mb-3 line-clamp-1">
+                      {product.description || 'Pure Essential Oil'}
+                    </p>
+
+                    {/* Category/Tag */}
+                    {product.category && (
+                      <div className="mb-3">
+                        <span className="text-xs px-2 py-1 bg-emerald-50 text-emerald-700 rounded-sm">
+                          {product.category}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Price */}
+                    <div className="flex items-center justify-between pt-4 border-t border-stone-200">
+                      <div>
+                        <span className="text-2xl font-semibold text-stone-900">
+                          {formatPrice(product.price)}
+                        </span>
+                      </div>
+                      <button 
+                        className="p-2 bg-emerald-700 text-white rounded-sm hover:bg-emerald-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={product.stock_quantity === 0}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // Add to cart logic here
+                        }}
+                      >
+                        <ShoppingCart className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              );
+            })
+          ) : (
+            // No products message
+            <div className="col-span-full text-center py-12">
+              <p className="text-stone-500">No products available at the moment.</p>
             </div>
-          ))}
+          )}
         </div>
 
         {/* View all CTA */}
