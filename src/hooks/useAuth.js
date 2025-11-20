@@ -55,6 +55,93 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /**
+   * Request OTP for phone signup
+   */
+  const phoneSignup = useCallback(async (phone) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await authAPI.phoneSignup(phone);
+      return { success: true, message: data.message };
+    } catch (err) {
+      const message = err.message || 'Failed to send OTP';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  /**
+   * Verify OTP for phone signup/login
+   */
+  const verifyOTP = useCallback(async (phone, otp) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await authAPI.verifyOTP(phone, otp);
+      
+      // If user exists and logged in
+      if (data.access_token) {
+        setTokens({
+          access_token: data.access_token,
+          refresh_token: data.refresh_token,
+          token_type: data.token_type,
+        });
+        setUser(data.user);
+        return { 
+          success: true, 
+          profile_completed: data.profile_completed,
+          user: data.user 
+        };
+      }
+      
+      // New user needs to complete profile
+      return { 
+        success: true, 
+        profile_completed: false,
+        phone: data.phone 
+      };
+    } catch (err) {
+      const message = err.message || 'OTP verification failed';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  }, [setTokens]);
+
+  /**
+   * Complete profile after OTP verification
+   */
+  const completeProfile = useCallback(async (profileData) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const userData = await authAPI.completeProfile(profileData);
+      setUser(userData);
+      
+      // After completing profile, need to verify OTP again to get tokens
+      const loginData = await authAPI.verifyOTP(profileData.phone, '123456'); // Use stored OTP
+      if (loginData.access_token) {
+        setTokens({
+          access_token: loginData.access_token,
+          refresh_token: loginData.refresh_token,
+          token_type: loginData.token_type,
+        });
+      }
+      
+      return { success: true, user: userData };
+    } catch (err) {
+      const message = err.message || 'Profile completion failed';
+      setError(message);
+      return { success: false, error: message };
+    } finally {
+      setLoading(false);
+    }
+  }, [setTokens]);
+
+  /**
    * Login with email and password
    */
   const login = useCallback(async (email, password) => {
@@ -214,6 +301,9 @@ export const AuthProvider = ({ children }) => {
     verifyPhone,
     refreshTokens,
     getCurrentUser,
+    phoneSignup,
+    verifyOTP,
+    completeProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

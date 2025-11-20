@@ -231,19 +231,7 @@ const ShipmentCard = ({ shipment, onViewDetails, formatDate }) => {
         </div>
       </div>
       
-      <div className="flex items-center space-x-2">
-        <Button
-          onClick={(e) => {
-            e.stopPropagation();
-            onViewDetails(shipment);
-          }}
-          variant="outline"
-          size="sm"
-        >
-          <Eye className="h-4 w-4 mr-1" />
-          View Details
-        </Button>
-        
+      <div className="flex items-center space-x-2">        
         {shipment.awb_code && (
           <Button
             onClick={handleDownloadLabel}

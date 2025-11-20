@@ -120,12 +120,6 @@ const Navbar = () => {
                       >
                         My Profile
                       </Link>
-                      <Link
-                        to="/orders"
-                        className="block px-4 py-2 text-sm text-stone-700 hover:bg-stone-50 transition-colors"
-                      >
-                        My Orders
-                      </Link>
                       <hr className="my-2 border-stone-200" />
                       <button
                         onClick={handleLogout}

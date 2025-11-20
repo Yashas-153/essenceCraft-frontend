@@ -370,6 +370,64 @@ export const authAPI = {
 
     return response.json();
   },
+
+  /**
+   * Request OTP for phone signup
+   * @param {string} phone - Phone number
+   */
+  phoneSignup: async (phone) => {
+    const response = await fetch(`${API_BASE_URL}/auth/phone-signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Failed to send OTP');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Verify OTP for phone signup/login
+   * @param {string} phone - Phone number
+   * @param {string} otp - OTP code
+   */
+  verifyOTP: async (phone, otp) => {
+    const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, otp }),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'OTP verification failed');
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Complete profile after OTP verification
+   * @param {Object} profileData - Profile data
+   */
+  completeProfile: async (profileData) => {
+    const response = await fetch(`${API_BASE_URL}/auth/complete-profile`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(profileData),
+    });
+
+    if (!response.ok) {
+      const data = await response.json();
+      throw new Error(data.detail || 'Profile completion failed');
+    }
+
+    return response.json();
+  },
 };
 
 // Admin API endpoints - requires admin authentication
@@ -944,6 +1002,204 @@ export const shiprocketAPI = {
     return fetchAPI(endpoint, {
       headers: {
         Authorization: `Bearer ${token}`,
+      },
+    });
+  },
+};
+
+// User Profile API endpoints
+export const userAPI = {
+  /**
+   * Get current user profile
+   */
+  getProfile: async () => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI('/users/me', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Update user profile
+   * @param {Object} profileData - Profile data to update
+   */
+  updateProfile: async (profileData) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI('/users/me', {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify(profileData),
+    });
+  },
+};
+
+// Order API endpoints
+export const orderAPI = {
+  /**
+   * Get user orders with pagination
+   * @param {number} page - Page number (default: 1)
+   * @param {number} limit - Items per page (default: 10, max: 100)
+   */
+  getOrders: async (page = 1, limit = 10) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+
+    const queryParams = new URLSearchParams();
+    queryParams.append('page', page);
+    queryParams.append('limit', limit);
+
+    return fetchAPI(`/orders?${queryParams.toString()}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Get single order by ID
+   * @param {number} orderId - Order ID
+   */
+  getOrderById: async (orderId) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI(`/orders/${orderId}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Cancel order
+   * @param {number} orderId - Order ID
+   */
+  cancelOrder: async (orderId) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI(`/orders/${orderId}/cancel`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+
+  /**
+   * Get order invoice
+   * @param {number} orderId - Order ID
+   */
+  getOrderInvoice: async (orderId) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI(`/orders/${orderId}/invoice`, {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+    });
+  },
+};
+
+// Payment API endpoints
+export const paymentAPI = {
+  /**
+   * Create payment intent
+   * @param {number} orderId - Order ID
+   * @param {string} paymentMethod - Payment method (credit_card, debit_card, upi, wallet, cod)
+   */
+  createPaymentIntent: async (orderId, paymentMethod) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI('/payments/create-intent', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        order_id: orderId,
+        payment_method: paymentMethod,
+      }),
+    });
+  },
+
+  /**
+   * Confirm payment
+   * @param {string} paymentIntentId - Payment intent ID
+   * @param {number} orderId - Order ID
+   */
+  confirmPayment: async (paymentIntentId, orderId) => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI('/payments/confirm', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        payment_intent_id: paymentIntentId,
+        order_id: orderId,
+      }),
+    });
+  },
+
+  /**
+   * Get payment history/details for user
+   */
+  getPaymentHistory: async () => {
+    const authTokens = localStorage.getItem('auth_tokens');
+    const token = authTokens ? JSON.parse(authTokens).access_token : null;
+    
+    if (!token) {
+      throw new Error('No access token found. Please login first.');
+    }
+    
+    return fetchAPI('/payments/history', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
       },
     });
   },

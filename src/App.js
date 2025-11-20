@@ -7,6 +7,7 @@ import Product from './pages/Product';
 import Cart from './pages/cart';
 import Checkout from './pages/checkout';
 import OrderSuccess from './pages/OrderSuccess';
+import Profile from './pages/Profile';
 import Layout from '@/components/navbar/Layout';  
 import { AuthProvider } from '@/hooks/useAuth';
 import { AdminProvider } from '@/hooks/useAdminAuth';
@@ -39,6 +40,7 @@ function App() {
               <Route path="/cart" element={<Layout><Cart /></Layout>} />
               <Route path="/checkout" element={<Layout><Checkout /></Layout>} />
               <Route path="/order-success/:orderId" element={<Layout><OrderSuccess /></Layout>} />
+              <Route path="/profile" element={<Layout><Profile /></Layout>} />
               <Route path="/login" element={<Layout><Login /></Layout>} />
               <Route path="/signup" element={<Layout><Signup /></Layout>} />
               
