@@ -463,13 +463,15 @@ export const adminAPI = {
    * @param {string} tokenType - Token type (default: 'bearer')
    */
   createProduct: async (productData, accessToken, tokenType = 'bearer') => {
+    const isFormData = typeof FormData !== 'undefined' && productData instanceof FormData;
     const response = await fetch(`${API_BASE_URL}/admin/products`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
+        // When sending FormData, let the browser set the Content-Type (multipart/form-data with boundary)
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         'Authorization': `${tokenType} ${accessToken}`,
       },
-      body: JSON.stringify(productData),
+      body: isFormData ? productData : JSON.stringify(productData),
     });
 
     if (!response.ok) {
@@ -488,13 +490,14 @@ export const adminAPI = {
    * @param {string} tokenType - Token type (default: 'bearer')
    */
   updateProduct: async (productId, productData, accessToken, tokenType = 'bearer') => {
+    const isFormData = typeof FormData !== 'undefined' && productData instanceof FormData;
     const response = await fetch(`${API_BASE_URL}/admin/products/${productId}`, {
-      method: 'PUT',
+      method: isFormData ? 'POST' : 'PUT',
       headers: {
-        'Content-Type': 'application/json',
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         'Authorization': `${tokenType} ${accessToken}`,
       },
-      body: JSON.stringify(productData),
+      body: isFormData ? productData : JSON.stringify(productData),
     });
 
     if (!response.ok) {

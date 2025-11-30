@@ -15,6 +15,8 @@ const ProductForm = ({ product, onSave, onCancel, isOpen }) => {
     is_active: true,
   });
   const [errors, setErrors] = useState({});
+  const [imageInputType, setImageInputType] = useState('url'); // 'url' | 'upload'
+  const [imageFile, setImageFile] = useState(null);
 
   // Reset form when product changes or modal opens
   useEffect(() => {
@@ -29,6 +31,8 @@ const ProductForm = ({ product, onSave, onCancel, isOpen }) => {
           image_url: product.image_url || '',
           is_active: product.is_active !== undefined ? product.is_active : true,
         });
+        setImageInputType(product.image_url ? 'url' : 'upload');
+        setImageFile(null);
       } else {
         setFormData({
           name: '',
@@ -39,6 +43,8 @@ const ProductForm = ({ product, onSave, onCancel, isOpen }) => {
           image_url: '',
           is_active: true,
         });
+        setImageInputType('url');
+        setImageFile(null);
       }
       setErrors({});
     }
@@ -76,8 +82,19 @@ const ProductForm = ({ product, onSave, onCancel, isOpen }) => {
       newErrors.stock = 'Stock must be 0 or greater';
     }
 
-    if (!formData.category.trim()) {
-      newErrors.category = 'Category is required';
+    // if (!formData.category.trim()) {
+    //   newErrors.category = 'Category is required';
+    // }
+
+    // Image validation based on input type
+    if (imageInputType === 'upload') {
+      if (!imageFile && !product) {
+        newErrors.image = 'Please upload a product image';
+      }
+    } else if (imageInputType === 'url') {
+      if (formData.image_url && !/^https?:\/\//i.test(formData.image_url)) {
+        // newErrors.image_url = 'Please provide a valid URL starting with http or https';
+      }
     }
 
     setErrors(newErrors);
@@ -92,21 +109,33 @@ const ProductForm = ({ product, onSave, onCancel, isOpen }) => {
     }
 
     try {
-      const productData = {
+      const baseData = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         price: parseFloat(formData.price),
         stock: parseInt(formData.stock),
         category: formData.category.trim(),
-        image_url: formData.image_url.trim(),
         is_active: formData.is_active,
       };
 
+      let payload;
+      if (imageInputType === 'upload') {
+        // Build multipart form data; send photo in the form only
+        const fd = new FormData();
+        Object.entries(baseData).forEach(([key, value]) => fd.append(key, value));
+        if (imageFile) {
+          fd.append('image', imageFile); // backend should read 'image' file
+        }
+        payload = fd;
+      } else {
+        payload = { ...baseData, image_url: formData.image_url.trim() };
+      }
+
       let result;
       if (product) {
-        result = await updateProduct(product.id, productData);
+        result = await updateProduct(product.id, payload);
       } else {
-        result = await createProduct(productData);
+        result = await createProduct(payload);
       }
 
       if (result.success) {
@@ -127,6 +156,8 @@ const ProductForm = ({ product, onSave, onCancel, isOpen }) => {
       image_url: '',
       is_active: true,
     });
+    setImageInputType('url');
+    setImageFile(null);
     setErrors({});
     onCancel();
   };
@@ -255,29 +286,91 @@ const ProductForm = ({ product, onSave, onCancel, isOpen }) => {
             )}
           </div>
 
-          {/* Image URL */}
+          {/* Image input toggle: URL or Upload */}
           <div>
-            <label className="block text-sm font-medium text-stone-700 mb-1">
-              Image URL
-            </label>
-            <input
-            //   type="url"
-              name="image_url"
-              value={formData.image_url}
-              onChange={handleInputChange}
-              className="w-full border border-stone-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-              placeholder="https://example.com/image.jpg"
-            />
-            {formData.image_url && (
-              <div className="mt-2">
-                <img
-                  src={formData.image_url}
-                  alt="Product preview"
-                  className="h-20 w-20 object-cover rounded-md border border-stone-200"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
+            <label className="block text-sm font-medium text-stone-700 mb-1">Image</label>
+            <div className="flex gap-4 mb-3">
+              <label className="flex items-center gap-2 text-sm text-stone-700">
+                <input
+                  type="radio"
+                  name="image_input_type"
+                  checked={imageInputType === 'url'}
+                  onChange={() => setImageInputType('url')}
                 />
+                Use URL
+              </label>
+              <label className="flex items-center gap-2 text-sm text-stone-700">
+                <input
+                  type="radio"
+                  name="image_input_type"
+                  checked={imageInputType === 'upload'}
+                  onChange={() => setImageInputType('upload')}
+                />
+                Upload File
+              </label>
+            </div>
+
+            {imageInputType === 'url' ? (
+              <div>
+                <input
+                  type="text"
+                  name="image_url"
+                  value={formData.image_url}
+                  onChange={handleInputChange}
+                  className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
+                    errors.image_url ? 'border-red-300' : 'border-stone-300'
+                  }`}
+                  placeholder="https://example.com/image.jpg"
+                />
+                {errors.image_url && (
+                  <p className="mt-1 text-sm text-red-600">{errors.image_url}</p>
+                )}
+                {formData.image_url && (
+                  <div className="mt-2">
+                    <img
+                      src={formData.image_url}
+                      alt="Product preview"
+                      className="h-20 w-20 object-cover rounded-md border border-stone-200"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0] || null;
+                      setImageFile(file);
+                      // If uploading, clear image_url
+                      if (file) {
+                        setFormData(prev => ({ ...prev, image_url: '' }));
+                      }
+                      if (errors.image) {
+                        setErrors(prev => ({ ...prev, image: '' }));
+                      }
+                    }}
+                    className="block w-full text-sm text-stone-700"
+                  />
+                  <Upload className="h-5 w-5 text-stone-500" />
+                </div>
+                {errors.image && (
+                  <p className="mt-1 text-sm text-red-600">{errors.image}</p>
+                )}
+                {imageFile && (
+                  <div className="mt-2">
+                    <img
+                      src={URL.createObjectURL(imageFile)}
+                      alt="Product preview"
+                      className="h-20 w-20 object-cover rounded-md border border-stone-200"
+                    />
+                  </div>
+                )}
               </div>
             )}
           </div>

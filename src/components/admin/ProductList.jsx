@@ -12,7 +12,16 @@ import {
 } from 'lucide-react';
 import { useAdminProducts } from '../../hooks/useAdminProducts';
 import { Button } from '../ui/button';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '../ui/table';
 
+const REACT_APP_STATIC_URL = process.env.REACT_APP_STATIC_URL
 const ProductList = ({ onEdit, onView, onDelete, onAdd }) => {
   const { 
     products, 
@@ -147,115 +156,101 @@ const ProductList = ({ onEdit, onView, onDelete, onAdd }) => {
             </Button>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-stone-200">
-              <thead className="bg-stone-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                    Category
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                    Stock
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-stone-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-stone-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-stone-200">
-                {products.map((product) => (
-                  <tr key={product.id} className="hover:bg-stone-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-12 w-12">
-                          {product.image_url ? (
-                            <img
-                              className="h-12 w-12 rounded-md object-cover"
-                              src={product.image_url}
-                              alt={product.name}
-                            />
-                          ) : (
-                            <div className="h-12 w-12 rounded-md bg-stone-200 flex items-center justify-center">
-                              <Package className="h-6 w-6 text-stone-400" />
-                            </div>
-                          )}
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Product</TableHead>
+                <TableHead>Category</TableHead>
+                <TableHead>Price</TableHead>
+                <TableHead>Stock</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {products.map((product) => (
+                <TableRow key={product.id}>
+                  <TableCell>
+                    <div className="flex items-center">
+                      <div className="flex-shrink-0 h-12 w-12">
+                        {product.image_url ? (
+                          <img
+                            className="h-12 w-12 rounded-md object-cover"
+                            src={`${REACT_APP_STATIC_URL}${product.image_url}`}
+                            alt={product.name}
+                          />
+                        ) : (
+                          <div className="h-12 w-12 rounded-md bg-stone-200 flex items-center justify-center">
+                            <Package className="h-6 w-6 text-stone-400" />
+                          </div>
+                        )}
+                      </div>
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-stone-900">
+                          {product.name}
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-stone-900">
-                            {product.name}
-                          </div>
-                          <div className="text-sm text-stone-500 max-w-xs truncate">
-                            {product.description}
-                          </div>
+                        <div className="text-sm text-stone-500 max-w-xs truncate">
+                          {product.description}
                         </div>
                       </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                      {product.category || 'Uncategorized'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                      {product.currency_symbol || '₹'}{product.price.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-stone-900">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        product.stock === 0 
-                          ? 'bg-red-100 text-red-800' 
-                          : product.stock <= 10 
-                            ? 'bg-amber-100 text-amber-800'
-                            : 'bg-emerald-100 text-emerald-800'
-                      }`}>
-                        {product.stock} units
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        product.is_active 
-                          ? 'bg-emerald-100 text-emerald-800' 
-                          : 'bg-stone-100 text-stone-800'
-                      }`}>
-                        {product.is_active ? 'Active' : 'Inactive'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex items-center justify-end space-x-2">
-                        <Button
-                          onClick={() => onView(product)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => onEdit(product)}
-                          variant="outline"
-                          size="sm"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          onClick={() => onDelete(product)}
-                          variant="outline"
-                          size="sm"
-                          className="text-red-600 hover:text-red-700 hover:border-red-300"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm text-stone-900">
+                    {product.category || 'Uncategorized'}
+                  </TableCell>
+                  <TableCell className="text-sm text-stone-900">
+                    {product.currency_symbol || '₹'}{product.price.toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      product.stock === 0 
+                        ? 'bg-red-100 text-red-800' 
+                        : product.stock <= 10 
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-emerald-100 text-emerald-800'
+                    }`}>
+                      {product.stock} units
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      product.is_active 
+                        ? 'bg-emerald-100 text-emerald-800' 
+                        : 'bg-stone-100 text-stone-800'
+                    }`}>
+                      {product.is_active ? 'Active' : 'Inactive'}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end space-x-2">
+                      <Button
+                        onClick={() => onView(product)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => onEdit(product)}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        onClick={() => onDelete(product)}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:border-red-300"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
         )}
       </div>
     </div>

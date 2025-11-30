@@ -6,7 +6,7 @@ import { withAdminAuth } from '../../hooks/useAdminAuth';
 import { useAdminProducts } from '../../hooks/useAdminProducts';
 
 const AdminProductsPage = () => {
-  const { deleteProduct } = useAdminProducts();
+  const { deleteProduct, refresh } = useAdminProducts();
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -38,14 +38,17 @@ const AdminProductsPage = () => {
       if (result.success) {
         setShowDeleteModal(false);
         setProductToDelete(null);
+        // Refresh the product list after deletion
+        await refresh();
       }
     }
   };
 
-  const handleFormSave = (product) => {
+  const handleFormSave = async (product) => {
     setShowForm(false);
     setSelectedProduct(null);
-    // ProductList will automatically refresh via the hook
+    // Refresh the product list to show updated data
+    await refresh();
   };
 
   const handleFormCancel = () => {
